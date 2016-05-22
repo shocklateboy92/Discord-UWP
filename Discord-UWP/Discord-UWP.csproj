@@ -100,6 +100,7 @@
     </Compile>
     <Compile Include="AuthenticationException.cs" />
     <Compile Include="AuthenticationManager.cs" />
+    <Compile Include="DiscordClient.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
