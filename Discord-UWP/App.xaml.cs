@@ -22,6 +22,8 @@ namespace Discord_UWP
     /// </summary>
     sealed partial class App : Application
     {
+        public static AuthenticationManager AuthManager { get; } = new AuthenticationManager();
+
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
         /// executed, and as such is the logical equivalent of main() or WinMain().

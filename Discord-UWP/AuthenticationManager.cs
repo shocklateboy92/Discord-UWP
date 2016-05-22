@@ -41,6 +41,7 @@ namespace Discord_UWP
             }
         };
 
+        public string SessionToken { get; private set; }
 
         public async Task DoAuthentication()
         {
@@ -62,12 +63,13 @@ namespace Discord_UWP
 
             if (authResult.ResponseStatus == WebAuthenticationStatus.Success)
             {
-                Uri url = new Uri(authResult.ResponseData);
-                var query = url.Fragment;
-                var match = Regex.Match(query, "access_token=([^&]+)");
+                Uri resultUrl = new Uri(authResult.ResponseData);
+                var match = Regex.Match(resultUrl.Fragment, "access_token=([^&]+)");
                 if (match.Success)
                 {
-                    Debug.WriteLine("Got Ticket: " + match.Groups[1]);
+                    var ticket = match.Groups[1].Value;
+                    Debug.WriteLine("Got Ticket: " + ticket);
+                    SessionToken = ticket;
                 }
             } else
             {

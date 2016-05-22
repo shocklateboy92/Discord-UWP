@@ -29,7 +29,7 @@ namespace Discord_UWP
 
         private async void Page_Loaded(object sender, RoutedEventArgs e)
         {
-            await new AuthenticationManager().DoAuthentication();
+            await App.AuthManager.DoAuthentication();
             Application.Current.Exit();
         }
     }
