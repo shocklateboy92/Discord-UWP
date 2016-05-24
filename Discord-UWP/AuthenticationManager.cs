@@ -5,6 +5,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Windows.Security.Authentication.Web;
 using System.Text.RegularExpressions;
+using System.IO;
+using System.Net.Http;
+using Windows.Data.Json;
 
 namespace Discord_UWP
 {
@@ -45,39 +48,33 @@ namespace Discord_UWP
 
         public async Task DoAuthentication()
         {
-            UriBuilder builder = new UriBuilder(OAuthEndpoint);
-            Debug.Assert(string.IsNullOrEmpty(builder.Query));
+            var file = File.OpenText("credentials.json");
 
-            builder.Query = 
-                string.Join(
-                    "&", 
-                    OAuthQueryParams.Select(
-                        (x) => $"{x.Key}={x.Value}"
-                    )
-                );
+            var client = new HttpClient();
+            var body = new StreamContent(file.BaseStream);
+            body.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+            var response = await client.PostAsync("https://discordapp.com/api/auth/login", body);
 
-            Debug.WriteLine("Making OAuth Request: " + builder.Uri.OriginalString);
-
-            var authResult = await WebAuthenticationBroker.AuthenticateAsync(
-                WebAuthenticationOptions.None, builder.Uri, new Uri(OAuthRedirect));
-
-            if (authResult.ResponseStatus == WebAuthenticationStatus.Success)
+            if (response.IsSuccessStatusCode)
             {
-                Uri resultUrl = new Uri(authResult.ResponseData);
-                var match = Regex.Match(resultUrl.Fragment, "access_token=([^&]+)");
-                if (match.Success)
+                var responseObject = JsonObject.Parse(await response.Content.ReadAsStringAsync());
+                var token = responseObject.GetNamedString("token");
+                Debug.WriteLine("Got token: " + token);
+                SessionToken = token;
+            }
+            else
+            {
+                string content = "";
+                if (response.Content != null)
                 {
-                    var ticket = match.Groups[1].Value;
-                    Debug.WriteLine("Got Ticket: " + ticket);
-                    SessionToken = ticket;
+                    content = await response.Content.ReadAsStringAsync();
                 }
-            } else
-            {
+
                 throw new AuthenticationException(
                     string.Format(
-                        "OAuth endpoint returned {0}: {1}",
-                        authResult.ResponseErrorDetail,
-                        authResult.ResponseData
+                        "auth request returned code {0} ({1}): {2}",
+                        response.StatusCode,
+                        response.ReasonPhrase, content
                     )
                 );
             }

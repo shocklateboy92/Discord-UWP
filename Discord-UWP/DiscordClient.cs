@@ -49,17 +49,18 @@ namespace Discord_UWP
                         op = 2,
                         d = new
                         {
+                            v = 4,
                             token = App.AuthManager.SessionToken,
                             properties = new Dictionary<string, string> {
-                                { "$os", "Windows" },
-                                { "$browser", "Chrome" },
-                                { "$device", "" },
-                                { "$referrer", "" },
-                                { "$referring_domain", "" }
+                                //{ "$os", "Windows" },
+                                //{ "$browser", "Chrome" },
+                                //{ "$device", "" },
+                                //{ "$referrer", "" },
+                                //{ "$referring_domain", "" }
                             },
                             compress = false,
-                            large_threshold = 50,
-                            shard = new List<int> { 0, 1 }
+                            //large_threshold = 50,
+                            //shard = new List<int> { 0, 1 }
                         }
                     };
 
@@ -75,7 +76,9 @@ namespace Discord_UWP
 
         private void OnMessageReceived(MessageWebSocket sender, MessageWebSocketMessageReceivedEventArgs args)
         {
-            Debug.WriteLine("msg: " + args.ToString());
+            var reader = args.GetDataReader();
+            var data = reader.ReadString(reader.UnconsumedBufferLength);
+            Debug.WriteLine("msg: " + data);
         }
 
         private void OnSocketClosed(IWebSocket sender, WebSocketClosedEventArgs args)
