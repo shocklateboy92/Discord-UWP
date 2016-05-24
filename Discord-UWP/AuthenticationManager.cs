@@ -3,46 +3,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Windows.Security.Authentication.Web;
-using System.Text.RegularExpressions;
 using System.IO;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using Windows.Data.Json;
 
 namespace Discord_UWP
 {
     public class AuthenticationManager
     {
-        private static readonly string OAuthEndpoint = "https://discordapp.com/oauth2/authorize";
-        private static readonly string OAuthRedirect = "http://home.lasath.org";
-        private static readonly string OAuthAppId = "181594107653652480";
-        private static readonly string OAuthAppSecret = "ua9SUGpzEA9DpaxIipSSmQQTJBXYK4fL";
-
-        private static readonly IList<string> OAuthScopes = new List<string>
-        {
-            "identify",
-            "email",
-            "connections",
-            "guilds",
-            "guilds.join"
-        };
-
-        private readonly IDictionary<string, string> OAuthQueryParams = new Dictionary<string, string>
-        {
-            { "response_type", "token" },
-            { "client_id", OAuthAppId },
-            { "client_secret", OAuthAppSecret },
-            {
-                "redirect_url",
-                Uri.EscapeUriString(OAuthRedirect)
-            },
-            {
-                "scope",
-                Uri.EscapeDataString(
-                    string.Join(" ", OAuthScopes)
-                )
-            }
-        };
+        private static readonly string LoginEndpoint = "https://discordapp.com/api/auth/login";
 
         public string SessionToken { get; private set; }
 
@@ -50,10 +20,13 @@ namespace Discord_UWP
         {
             var file = File.OpenText("credentials.json");
 
-            var client = new HttpClient();
             var body = new StreamContent(file.BaseStream);
-            body.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
-            var response = await client.PostAsync("https://discordapp.com/api/auth/login", body);
+            body.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+
+            // According to the fiddler trace of the offical client,
+            // all we need to do is make a request to the login endpoint
+            var client = new HttpClient();
+            var response = await client.PostAsync(LoginEndpoint, body);
 
             if (response.IsSuccessStatusCode)
             {
@@ -64,6 +37,7 @@ namespace Discord_UWP
             }
             else
             {
+                // Try to do something nice with the error
                 string content = "";
                 if (response.Content != null)
                 {
