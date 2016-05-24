@@ -52,15 +52,13 @@ namespace Discord_UWP
                             v = 4,
                             token = App.AuthManager.SessionToken,
                             properties = new Dictionary<string, string> {
-                                //{ "$os", "Windows" },
-                                //{ "$browser", "Chrome" },
-                                //{ "$device", "" },
-                                //{ "$referrer", "" },
-                                //{ "$referring_domain", "" }
+                                { "$os", "Windows" },
+                                { "$browser", "" },
+                                { "$device", "Windows_Phone" },
+                                { "$referrer", "" },
+                                { "$referring_domain", "" }
                             },
                             compress = false,
-                            //large_threshold = 50,
-                            //shard = new List<int> { 0, 1 }
                         }
                     };
 
