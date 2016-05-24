@@ -28,10 +28,5 @@ namespace Discord_UWP
             this.InitializeComponent();
         }
 
-        private async void Page_Loaded(object sender, RoutedEventArgs e)
-        {
-            await Task.Run(App.AuthManager.DoAuthentication);
-            await new DiscordClient().UpdateGateway();
-        }
     }
 }

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading.Tasks;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
@@ -23,6 +23,8 @@ namespace Discord_UWP
     sealed partial class App : Application
     {
         public static AuthenticationManager AuthManager { get; } = new AuthenticationManager();
+
+        public static DiscordClient Client { get; } = new DiscordClient();
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -82,6 +84,9 @@ namespace Discord_UWP
                 // Ensure the current window is active
                 Window.Current.Activate();
             }
+
+            // Do our discord app initialization
+            Task.Run(InitializeApplication);
         }
 
         /// <summary>
@@ -104,8 +109,17 @@ namespace Discord_UWP
         private void OnSuspending(object sender, SuspendingEventArgs e)
         {
             var deferral = e.SuspendingOperation.GetDeferral();
+
+            Client.CloseSocket();
+
             //TODO: Save application state and stop any background activity
             deferral.Complete();
+        }
+
+        private async Task InitializeApplication()
+        {
+            await Task.Run(App.AuthManager.DoAuthentication);
+            await new DiscordClient().UpdateGateway();
         }
     }
 }

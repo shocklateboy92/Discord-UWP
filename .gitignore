@@ -244,3 +244,4 @@ ModelManifest.xml
 # FAKE - F# Make
 .fake/
 /Discord-UWP/credentials.json
+/ready_resposne.json
