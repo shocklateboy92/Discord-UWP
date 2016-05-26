@@ -16,120 +16,51 @@ namespace Discord_UWP
     public class DiscordClient
     {
         public static readonly string EndpointBase = "https://discordapp.com/api";
-        public static readonly string GatewayEndpoint = EndpointBase + "/gateway";
 
-        private MessageWebSocket _gatewaySocket;
-        private DataWriter _gatewayWriter;
+        private GatewaySocket _gateway;
 
-        private Timer _heartbeatTimer;
 
         public DiscordClient()
         {
-            _gatewaySocket = new MessageWebSocket();
-            _gatewaySocket.Control.MessageType = SocketMessageType.Utf8;
-            _gatewaySocket.MessageReceived += OnMessageReceived;
-            _gatewaySocket.Closed += OnSocketClosed;
-
-            _heartbeatTimer = new Timer(
-                new TimerCallback(SendHeartbeat),
-                null,
-                Timeout.Infinite,
-                Timeout.Infinite
-            );
+            _gateway = new GatewaySocket();
+            _gateway.InitialStateReceived += OnInitialStateReceived;
         }
 
-        public async Task UpdateGateway()
+        private async void OnInitialStateReceived(D initialState)
         {
-            using (var client = new HttpClient())
+            foreach (var guild in initialState.Guilds)
             {
-                // Get the current gateway URL
-                // TODO: cache this on disk somewhere
-                var response = await client.GetAsync(new Uri(GatewayEndpoint));
+                var voiceChannels = guild.Channels.Where(c => string.Compare(c.Type, "voice", ignoreCase: true) == 0).Select(c => $"'{c.Name}' ({c.Id})");
+                Debug.WriteLine($"found guild: '{guild.Name}' ({guild.Id}) with voice channels: {string.Join(", ", voiceChannels)}");
 
-                if (response.IsSuccessStatusCode)
+                var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "184883715053322241");
+
+                if (hotChannel != null)
                 {
-                    var responseData = await response.Content.ReadAsStringAsync();
-                    var gateway = JsonObject.Parse(responseData);
-                    var gatewayUrl = gateway["url"].GetString();
-                    Debug.WriteLine("Got gatway: " + gatewayUrl);
-
-                    var builder = new UriBuilder(gatewayUrl);
-                    builder.Query = "v=4&encoding=json";
-                    await _gatewaySocket.ConnectAsync(new Uri(gatewayUrl));
-                    var handshake = new
+                    await _gateway.SendMessage(new
                     {
-                        op = 2,
+                        op = 4,
                         d = new
                         {
-                            v = 4,
-                            token = App.AuthManager.SessionToken,
-                            properties = new Dictionary<string, string> {
-                                { "$os", "Windows" },
-                                { "$browser", "" },
-                                { "$device", "Windows_Phone" },
-                                { "$referrer", "" },
-                                { "$referring_domain", "" }
-                            },
-                            compress = false,
+                            guild_id = guild.Id,
+                            channel_id = hotChannel.Id,
+                            self_deaf = false,
+                            self_mute = true
                         }
-                    };
-
-                    await SendMessage(handshake);
+                    });
                 }
             }
         }
 
-        private async Task SendMessage(object handshake)
+        public async Task UpdateGateway()
         {
-            var jsonHandshake = JsonConvert.SerializeObject(handshake);
-            Debug.WriteLine(jsonHandshake);
-
-            if (_gatewayWriter == null)
-            {
-                _gatewayWriter = new DataWriter(_gatewaySocket.OutputStream);
-            }
-            _gatewayWriter.WriteString(jsonHandshake);
-            await _gatewayWriter.StoreAsync();
+            await _gateway.BeginConnection();
         }
 
-        public void CloseSocket()
+        public void CloseSockets()
         {
             Debug.WriteLine("Closing socket...");
-            _gatewaySocket.Dispose();
-        }
-
-        private void OnMessageReceived(MessageWebSocket sender, MessageWebSocketMessageReceivedEventArgs args)
-        {
-            var reader = args.GetDataReader();
-            var data = reader.ReadString(reader.UnconsumedBufferLength);
-            var msgBase = JsonObject.Parse(data);
-
-            if (msgBase.GetNamedString("t") == "READY")
-            {
-                Debug.WriteLine("Got ready message!");
-                MessageFormat msg = JsonConvert.DeserializeObject<MessageFormat>(data);
-
-                Debug.WriteLine("Getting ready for heartbeat interval: " + msg.D.HeartbeatInterval);
-                _heartbeatTimer.Change(0, msg.D.HeartbeatInterval);
-            } else
-            {
-                Debug.WriteLine(data);
-            }
-        }
-
-        private void OnSocketClosed(IWebSocket sender, WebSocketClosedEventArgs args)
-        {
-            Debug.WriteLine($"Socket closed with code '{args.Code}' for reason: {args.Reason}");
-
-            // Currenly we don't have any logic anywhere in the App to re-open
-            // the socket once it's closed. So we may as well exit if this happens.
-            App.Current.Exit();
-        }
-
-        private async void SendHeartbeat(object state)
-        {
-            Debug.WriteLine("sending heartbeat...");
-            await SendMessage(new { op = 1, d = 251 });
+            _gateway.CloseSocket();
         }
     }
 }

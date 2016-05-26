@@ -110,7 +110,7 @@ namespace Discord_UWP
         {
             var deferral = e.SuspendingOperation.GetDeferral();
 
-            Client.CloseSocket();
+            Client.CloseSockets();
 
             //TODO: Save application state and stop any background activity
             deferral.Complete();
@@ -118,7 +118,7 @@ namespace Discord_UWP
 
         private async Task InitializeApplication()
         {
-            await Task.Run(App.AuthManager.DoAuthentication);
+            await AuthManager.DoAuthentication();
             await new DiscordClient().UpdateGateway();
         }
     }
