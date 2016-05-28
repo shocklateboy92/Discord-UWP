@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
+using System.Collections;
+using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 namespace Discord_UWP
 {
@@ -20,19 +23,24 @@ namespace Discord_UWP
         private Timer _heartbeatTimer;
         private int _heartbeatCount;
 
+        public IReadOnlyDictionary<string, IMessageHandler> MessageHandlers { get; set; }
+
         public AbstractSocket()
         {
             _gatewaySocket = new MessageWebSocket();
             _gatewaySocket.Control.MessageType = SocketMessageType.Utf8;
-            _gatewaySocket.MessageReceived += OnMessageReceived;
+            _gatewaySocket.MessageReceived += OnSocketMessageReceived;
             _gatewaySocket.Closed += OnSocketClosed;
 
             _heartbeatCount = 0;
         }
 
-        public delegate void MessageHandler(string message);
-
-        public event MessageHandler MessageReceived;
+        private void OnSocketMessageReceived(MessageWebSocket sender, MessageWebSocketMessageReceivedEventArgs args)
+        {
+            var reader = args.GetDataReader();
+            var msg = JObject.Parse(reader.ReadString(reader.UnconsumedBufferLength));
+            OnMessageReceived(msg);
+        }
 
         private void OnSocketClosed(IWebSocket sender, WebSocketClosedEventArgs args)
         {
@@ -59,9 +67,23 @@ namespace Discord_UWP
 
         protected abstract object GetIdentifyPayload();
 
-        protected abstract void OnMessageReceived(
-            MessageWebSocket sender, 
-            MessageWebSocketMessageReceivedEventArgs args);
+        protected virtual async void OnMessageReceived(JObject msg)
+        {
+            var msgType = msg.GetValue("t").ToString();
+            if (msgType.Contains("VOICE"))
+            {
+                Debug.WriteLine("recv: " + msg.ToString());
+            }
+            if (MessageHandlers.ContainsKey(msgType))
+            {
+                var handler = MessageHandlers[msgType];
+                var response = await handler.HandleMessage(msg.GetValue("d"));
+                if (response != null)
+                {
+                    await SendMessage(response);
+                }
+            }
+        }
 
         public async Task BeginConnection()
         {

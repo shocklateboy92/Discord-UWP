@@ -104,12 +104,13 @@
     <Compile Include="AuthenticationException.cs" />
     <Compile Include="AuthenticationManager.cs" />
     <Compile Include="DiscordClient.cs" />
-    <Compile Include="DiscordSocket.cs" />
+    <Compile Include="AbstractSocket.cs" />
     <Compile Include="GatewaySocket.cs" />
     <Compile Include="JsonObjects.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>
+    <Compile Include="MessageHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VoiceSocket.cs" />
   </ItemGroup>

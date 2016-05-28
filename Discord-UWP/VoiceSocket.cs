@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -36,13 +37,9 @@ namespace Discord_UWP
             };
         }
 
-        protected override void OnMessageReceived(
-            MessageWebSocket sender, 
-            MessageWebSocketMessageReceivedEventArgs args)
+        protected override void OnMessageReceived(JObject msg)
         {
-            var reader = args.GetDataReader();
-            var data = reader.ReadString(reader.UnconsumedBufferLength);
-            Debug.WriteLine("voice recv: " + data);
+            Debug.WriteLine("voice recv: " + msg.ToString());
         }
     }
 }

@@ -22,7 +22,14 @@ namespace Discord_UWP
 
         public DiscordClient()
         {
-            _gateway = new GatewaySocket();
+            _gateway = new GatewaySocket
+            {
+                MessageHandlers = new Dictionary<string, IMessageHandler>
+                {
+                    {"VOICE_STATE_UPDATE", new MessageHandler<VoiceStateUpdate>(OnVoiceStateUpdate)},
+                    {"VOICE_SERVER_UPDATE", new MessageHandler<VoiceServerUpdate>(OnVoiceServerUpdate)}
+                }
+            };
             _gateway.InitialStateReceived += OnInitialStateReceived;
         }
 
@@ -49,6 +56,48 @@ namespace Discord_UWP
                         }
                     });
                 }
+            }
+        }
+
+        private void OnVoiceStateUpdate(VoiceStateUpdate voiceState)
+        {
+            bool doConnect = false;
+            if (_voice != null)
+            {
+                // Other event has already happened
+                doConnect = true;
+            }
+            else
+            {
+                _voice = new VoiceSocket();
+            }
+            _voice.UserId = voiceState.UserId;
+            _voice.SessionId = voiceState.SessionId;
+            _voice.ServerId = voiceState.GuildId;
+
+            if (doConnect)
+            {
+                Task.Run(_voice.BeginConnection);
+            }
+        }
+
+        private void OnVoiceServerUpdate(VoiceServerUpdate voiceServer)
+        {
+            bool doConnect = false;
+            if (_voice != null)
+            {
+                doConnect = true;
+            }
+            else
+            {
+                _voice = new VoiceSocket();
+            }
+            _voice.GatewayUrl = new Uri("wss://" + voiceServer.Endpoint.Remove(voiceServer.Endpoint.Length - 3));
+            _voice.Token = voiceServer.Token;
+
+            if (doConnect)
+            {
+                Task.Run(_voice.BeginConnection);
             }
         }
 
