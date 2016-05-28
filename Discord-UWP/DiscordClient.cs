@@ -18,7 +18,7 @@ namespace Discord_UWP
         public static readonly string EndpointBase = "https://discordapp.com/api";
 
         private GatewaySocket _gateway;
-
+        private VoiceSocket _voice;
 
         public DiscordClient()
         {
@@ -40,12 +40,12 @@ namespace Discord_UWP
                     await _gateway.SendMessage(new
                     {
                         op = 4,
-                        d = new
+                        d = new VoiceStateUpdate
                         {
-                            guild_id = guild.Id,
-                            channel_id = hotChannel.Id,
-                            self_deaf = false,
-                            self_mute = true
+                            GuildId = guild.Id,
+                            ChannelId = hotChannel.Id,
+                            SelfDeaf = false,
+                            SelfMute = true
                         }
                     });
                 }

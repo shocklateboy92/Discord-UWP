@@ -57,6 +57,8 @@ namespace Discord_UWP
             };
         }
 
+        private VoiceSocket _voice;
+
         protected override void OnMessageReceived(MessageWebSocket sender, MessageWebSocketMessageReceivedEventArgs args)
         {
             var reader = args.GetDataReader();
@@ -64,17 +66,49 @@ namespace Discord_UWP
             var msgBase = JObject.Parse(data);
 
             var type = msgBase.GetValue("t").ToString();
+            var rawEvent = msgBase.GetValue("d");
+            var doConnect = false;
             switch (type)
             {
                 case "READY":
-                    var state = msgBase.GetValue("d").ToObject<D>();
+                    var state = rawEvent.ToObject<D>();
                     BeginHeartbeat(state.HeartbeatInterval, opCode: 1);
                     InitialStateReceived?.Invoke(state);
                     break;
                 case "VOICE_STATE_UPDATE":
+                    Debug.WriteLine("gateway recv: " + data);
+                    var voiceState = rawEvent.ToObject<VoiceStateUpdate>();
+                    if (_voice != null)
+                    {
+                        // Other event has already happened
+                        doConnect = true;
+                    }
+                    else
+                    {
+                        _voice = new VoiceSocket();
+                    }
+                    _voice.UserId = voiceState.UserId;
+                    _voice.SessionId = voiceState.SessionId;
+                    _voice.ServerId = voiceState.GuildId;
+                    break;
                 case "VOICE_SERVER_UPDATE":
                     Debug.WriteLine("gateway recv: " + data);
+                    if (_voice != null)
+                    {
+                        doConnect = true;
+                    }
+                    else
+                    {
+                        _voice = new VoiceSocket();
+                    }
+                    var voiceServer = rawEvent.ToObject<VoiceServerUpdate>();
+                    _voice.GatewayUrl = new Uri("wss://" + voiceServer.Endpoint.Remove(voiceServer.Endpoint.Length - 3));
+                    _voice.Token = voiceServer.Token;
                     break;
+            }
+            if (doConnect)
+            {
+                Task.Run(_voice.BeginConnection);
             }
         }
     }

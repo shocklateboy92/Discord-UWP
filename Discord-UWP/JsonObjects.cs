@@ -461,4 +461,48 @@ namespace Discord_UWP
         [JsonProperty("d")]
         public D D { get; set; }
     }
+
+    // Voice event data
+    public class VoiceStateUpdate
+    {
+
+        [JsonProperty("user_id")]
+        public string UserId { get; set; }
+
+        [JsonProperty("suppress")]
+        public bool Suppress { get; set; }
+
+        [JsonProperty("session_id")]
+        public string SessionId { get; set; }
+
+        [JsonProperty("self_mute")]
+        public bool SelfMute { get; set; }
+
+        [JsonProperty("self_deaf")]
+        public bool SelfDeaf { get; set; }
+
+        [JsonProperty("mute")]
+        public bool Mute { get; set; }
+
+        [JsonProperty("guild_id")]
+        public string GuildId { get; set; }
+
+        [JsonProperty("deaf")]
+        public bool Deaf { get; set; }
+
+        [JsonProperty("channel_id")]
+        public string ChannelId { get; set; }
+    }
+
+    public class VoiceServerUpdate
+    {
+        [JsonProperty("token")]
+        public string Token { get; set; }
+
+        [JsonProperty("guild_id")]
+        public string GuildId { get; set; }
+
+        [JsonProperty("endpoint")]
+        public string Endpoint { get; set; }
+    }
 }
