@@ -92,7 +92,8 @@ namespace Discord_UWP
             {
                 _voice = new VoiceSocket();
             }
-            _voice.GatewayUrl = new Uri("wss://" + voiceServer.Endpoint.Remove(voiceServer.Endpoint.Length - 3));
+            // ditch the useless port attached to the hostname
+            _voice.Endpoint = voiceServer.Endpoint.Remove(voiceServer.Endpoint.Length - 3);
             _voice.Token = voiceServer.Token;
 
             if (doConnect)

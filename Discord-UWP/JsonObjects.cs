@@ -505,4 +505,21 @@ namespace Discord_UWP
         [JsonProperty("endpoint")]
         public string Endpoint { get; set; }
     }
+
+    // Voice Socket OperationData
+    public class VoiceReadyData
+    {
+
+        [JsonProperty("ssrc")]
+        public uint Ssrc { get; set; }
+
+        [JsonProperty("port")]
+        public int Port { get; set; }
+
+        [JsonProperty("modes")]
+        public IList<string> Modes { get; set; }
+
+        [JsonProperty("heartbeat_interval")]
+        public int HeartbeatInterval { get; set; }
+    }
 }
