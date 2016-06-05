@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -24,6 +25,7 @@ namespace Discord_UWP
         public string SessionId { get; set; }
         public object Token { get; set; }
         public short? LocalPort { get; private set; }
+        public int Ssrc { get; private set; }
 
         protected override Task<Uri> GetGatewayUrl()
         {
@@ -90,14 +92,13 @@ namespace Discord_UWP
 
         private async void OnUdpMessageReceived(DatagramSocket sender, DatagramSocketMessageReceivedEventArgs args)
         {
-            Log.WriteLine("Reciving data...");
             var reader = args.GetDataReader();
             reader.UnicodeEncoding = Windows.Storage.Streams.UnicodeEncoding.Utf8;
 
             if (LocalPort == null)
             {
-                var ssrc = IPAddress.NetworkToHostOrder(reader.ReadInt32());
-                Log.WriteLine("Got UDP Packet with SSRC: " + ssrc);
+                Ssrc = IPAddress.NetworkToHostOrder(reader.ReadInt32());
+                Log.WriteLine("Got UDP Packet with SSRC: " + Ssrc);
                 var remainingBytes = reader.ReadString(reader.UnconsumedBufferLength - 2);
                 var localAddress = string.Join("", remainingBytes.TakeWhile(c => c != '\u0000'));
                 Log.WriteLine("Localhost = " + localAddress);
@@ -120,11 +121,22 @@ namespace Discord_UWP
                     }
                 });
             }
+            else
+            {
+                var packetLength = reader.UnconsumedBufferLength;
+                byte[] packet = new byte[packetLength];
+                reader.ReadBytes(packet);
 
-            //if (_dumpFile == null)
-            //{
-            //    _dumpFile = DownloadsFolder.CreateFileAsync("packet-dump.dat");
-            //}
+                if (packetLength < 12) return; //irrelevant packet
+                if (packet[0] != 0x80) return; //flags
+                if (packet[1] != 0x78) return; //payload type. you know, from before.
+
+                ushort sequenceNumber = (ushort)((packet[2] << 8) | packet[3] << 0);
+                uint timDocuestamp = (uint)((packet[4] << 24) | packet[5] << 16 | packet[6] << 8 | packet[7] << 0);
+                uint ssrc = (uint)((packet[8] << 24) | (packet[9] << 16) | (packet[10] << 8) | (packet[11] << 0));
+
+                Log.WriteLine($"Decoding voice data: FromSsrc = {ssrc}, SequenceNumber = {sequenceNumber}, Timestamp = {timDocuestamp}...");
+            }
 
             //Log.WriteLine($"Got SSRC({ssrc}) IP addr: {strAddress}");
             //Log.WriteLine("udp recv: " + data);

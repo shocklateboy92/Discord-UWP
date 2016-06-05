@@ -21,6 +21,11 @@
                         Text="{x:Bind}"/>
                 </DataTemplate>
             </ListView.ItemTemplate>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="MinHeight" Value="0"/>
+                </Style>
+            </ListView.ItemContainerStyle>
         </ListView>
     </Grid>
 </Page>
