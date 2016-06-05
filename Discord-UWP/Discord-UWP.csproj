@@ -107,6 +107,7 @@
     <Compile Include="AbstractSocket.cs" />
     <Compile Include="GatewaySocket.cs" />
     <Compile Include="JsonObjects.cs" />
+    <Compile Include="Log.cs" />
     <Compile Include="MainPage.xaml.cs">
       <DependentUpon>MainPage.xaml</DependentUpon>
     </Compile>

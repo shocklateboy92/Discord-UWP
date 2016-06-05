@@ -22,6 +22,7 @@ namespace Discord_UWP
 
         private Timer _heartbeatTimer;
         private int _heartbeatCount;
+        private bool _connected;
 
         public IReadOnlyDictionary<string, IMessageHandler> MessageHandlers { get; set; }
 
@@ -44,7 +45,7 @@ namespace Discord_UWP
 
         private void OnSocketClosed(IWebSocket sender, WebSocketClosedEventArgs args)
         {
-            Debug.WriteLine($"Socket closed with code '{args.Code}' for reason: {args.Reason}");
+            Log.WriteLine($"Socket closed with code '{args.Code}' for reason: {args.Reason}");
 
             // Currenly we don't have any logic anywhere in the App to re-open
             // the socket once it's closed. So we may as well exit if this happens.
@@ -72,7 +73,7 @@ namespace Discord_UWP
             var msgType = msg.GetValue("t").ToString();
             if (msgType.Contains("VOICE"))
             {
-                Debug.WriteLine("recv: " + msg.ToString());
+                Log.WriteLine("recv: " + msg.ToString());
             }
             if (MessageHandlers.ContainsKey(msgType))
             {
@@ -87,8 +88,13 @@ namespace Discord_UWP
 
         public async Task BeginConnection()
         {
+            if (_connected)
+            {
+                return;
+            }
             await _gatewaySocket.ConnectAsync(await GetGatewayUrl());
             await SendMessage(GetIdentifyPayload());
+            _connected = true;
         }
 
         public void CloseSocket()
@@ -104,7 +110,7 @@ namespace Discord_UWP
         public async Task SendMessage(object handshake)
         {
             var jsonHandshake = JsonConvert.SerializeObject(handshake);
-            Debug.WriteLine(jsonHandshake);
+            Log.WriteLine("sending: " + jsonHandshake);
 
             if (_gatewayWriter == null)
                 _gatewayWriter = new DataWriter(_gatewaySocket.OutputStream);

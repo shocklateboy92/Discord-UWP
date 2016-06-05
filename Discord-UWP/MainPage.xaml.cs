@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -23,10 +24,33 @@ namespace Discord_UWP
     /// </summary>
     public sealed partial class MainPage : Page
     {
+        public ObservableCollection<string> LogMessages => Log.CurrentMessages;
+
         public MainPage()
         {
             this.InitializeComponent();
         }
 
+        private void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Do our discord app initialization
+            Task.Run(App.InitializeApplication);
+        }
+
+        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateWrapMode(e.AddedItems, TextWrapping.Wrap);
+            UpdateWrapMode(e.RemovedItems, TextWrapping.NoWrap);
+        }
+
+        private void UpdateWrapMode(IList<Object> items, TextWrapping wrapMode)
+        {
+            foreach (var item in items)
+            {
+                var container = (_logListView.ContainerFromItem(item)) as ListViewItem;
+                var textBlock = container.ContentTemplateRoot as TextBlock;
+                textBlock.TextWrapping = wrapMode;
+            }
+        }
     }
 }

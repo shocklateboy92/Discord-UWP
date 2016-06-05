@@ -32,7 +32,7 @@ namespace Discord_UWP
             {
                 var responseObject = JsonObject.Parse(await response.Content.ReadAsStringAsync());
                 var token = responseObject.GetNamedString("token");
-                Debug.WriteLine("Got token: " + token);
+                Log.WriteLine("Got token: " + token);
                 SessionToken = token;
             }
             else

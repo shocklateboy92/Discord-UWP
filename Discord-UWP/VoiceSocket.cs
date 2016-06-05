@@ -3,10 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Networking;
 using Windows.Networking.Sockets;
+using Windows.Storage;
 using Windows.Storage.Streams;
 
 namespace Discord_UWP
@@ -21,6 +23,7 @@ namespace Discord_UWP
         public string UserId { get; set; }
         public string SessionId { get; set; }
         public object Token { get; set; }
+        public short? LocalPort { get; private set; }
 
         protected override Task<Uri> GetGatewayUrl()
         {
@@ -44,36 +47,63 @@ namespace Discord_UWP
 
         protected async override void OnMessageReceived(JObject msg)
         {
-            Debug.WriteLine("voice recv: " + msg.ToString());
+            Log.WriteLine("voice recv: " + msg.ToString());
             int op = msg.Value<int>("op");
 
             // Voice ready event
             if (op == 2)
             {
-                var eData = msg.ToObject<VoiceReadyData>();
+                var eData = msg.GetValue("d").ToObject<VoiceReadyData>();
                 BeginHeartbeat(eData.HeartbeatInterval, 3);
 
                 _udpSocket = new DatagramSocket();
                 _udpSocket.MessageReceived += OnUdpMessageReceived;
                 _udpWriter = new DataWriter(_udpSocket.OutputStream);
-                await _udpSocket.ConnectAsync(
-                    new EndpointPair(
-                        new HostName("192.168.1.104"),
-                        "7771",
-                        new HostName(Endpoint),
-                        eData.Port.ToString()
-                    )
-                );
+                //await _udpSocket.ConnectAsync(
+                //    new HostName(Endpoint),
+                //    eData.Port.ToString()
+                //);
+                await _udpSocket.ConnectAsync(new EndpointPair(new HostName("192.168.1.104"), "7771", new HostName(Endpoint), eData.Port.ToString()));
 
-                //_udpWriter.WriteByte(0x80); // type
-                //_udpWriter.WriteByte(0x78); // version
-                //_udpWriter.WriteUInt16(0);  // sequence
-                //_udpWriter.WriteUInt32(unchecked((uint)TimeSpan.FromTicks(DateTime.Now.Ticks).TotalMilliseconds));
 
-                //_udpWriter.WriteUInt32(eData.Ssrc);
-                //_udpWriter.WriteBytes(new byte[70 - sizeof(uint)]);
+                // Packet to ask the server to send back our (NAT/external) address
+                _udpWriter.WriteUInt32(eData.Ssrc);
+                _udpWriter.WriteBytes(new byte[70 - sizeof(uint)]);
 
-                //await _udpWriter.StoreAsync();
+                await _udpWriter.StoreAsync();
+            }
+
+            // Session information
+            else if (op == 4)
+            {
+                await SendMessage(new
+                {
+                    op = 5,
+                    d = new
+                    {
+                        speaking = true,
+                        delay = 0
+                    }
+                });
+            }
+        }
+
+        private async void OnUdpMessageReceived(DatagramSocket sender, DatagramSocketMessageReceivedEventArgs args)
+        {
+            Log.WriteLine("Reciving data...");
+            var reader = args.GetDataReader();
+            reader.UnicodeEncoding = Windows.Storage.Streams.UnicodeEncoding.Utf8;
+
+            if (LocalPort == null)
+            {
+                var ssrc = IPAddress.NetworkToHostOrder(reader.ReadInt32());
+                Log.WriteLine("Got UDP Packet with SSRC: " + ssrc);
+                var remainingBytes = reader.ReadString(reader.UnconsumedBufferLength - 2);
+                var localAddress = string.Join("", remainingBytes.TakeWhile(c => c != '\u0000'));
+                Log.WriteLine("Localhost = " + localAddress);
+
+                LocalPort = IPAddress.NetworkToHostOrder((short)reader.ReadUInt16());
+                Log.WriteLine("LocalPort = " + LocalPort);
 
                 await SendMessage(new
                 {
@@ -83,20 +113,21 @@ namespace Discord_UWP
                         protocol = "udp",
                         data = new
                         {
-                            address = "home.lasath.org",
-                            port = 7001,
+                            address = localAddress,
+                            port = 7771,
                             mode = "plain"
                         },
                     }
                 });
             }
-        }
 
-        private void OnUdpMessageReceived(DatagramSocket sender, DatagramSocketMessageReceivedEventArgs args)
-        {
-            var reader = args.GetDataReader();
-            var data = reader.ReadString(reader.UnconsumedBufferLength);
-            Debug.WriteLine("udp recv: " + data);
+            //if (_dumpFile == null)
+            //{
+            //    _dumpFile = DownloadsFolder.CreateFileAsync("packet-dump.dat");
+            //}
+
+            //Log.WriteLine($"Got SSRC({ssrc}) IP addr: {strAddress}");
+            //Log.WriteLine("udp recv: " + data);
         }
     }
 }

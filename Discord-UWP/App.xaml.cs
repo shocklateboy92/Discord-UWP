@@ -84,9 +84,6 @@ namespace Discord_UWP
                 // Ensure the current window is active
                 Window.Current.Activate();
             }
-
-            // Do our discord app initialization
-            Task.Run(InitializeApplication);
         }
 
         /// <summary>
@@ -116,7 +113,7 @@ namespace Discord_UWP
             deferral.Complete();
         }
 
-        private async Task InitializeApplication()
+        public static async Task InitializeApplication()
         {
             await AuthManager.DoAuthentication();
             await new DiscordClient().UpdateGateway();

@@ -30,7 +30,7 @@ namespace Discord_UWP
                 var gatewayUrl = JsonObject
                     .Parse(await response.Content.ReadAsStringAsync())
                     .GetNamedString("url");
-                Debug.WriteLine("Got gatway: " + gatewayUrl);
+                Log.WriteLine("Got gatway: " + gatewayUrl);
 
                 return new Uri(gatewayUrl);
             }

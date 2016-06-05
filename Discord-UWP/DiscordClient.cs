@@ -38,7 +38,7 @@ namespace Discord_UWP
             foreach (var guild in initialState.Guilds)
             {
                 var voiceChannels = guild.Channels.Where(c => string.Compare(c.Type, "voice", ignoreCase: true) == 0).Select(c => $"'{c.Name}' ({c.Id})");
-                Debug.WriteLine($"found guild: '{guild.Name}' ({guild.Id}) with voice channels: {string.Join(", ", voiceChannels)}");
+                Log.WriteLine($"found guild: '{guild.Name}' ({guild.Id}) with voice channels: {string.Join(", ", voiceChannels)}");
 
                 var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "184883715053322241");
 
@@ -52,7 +52,7 @@ namespace Discord_UWP
                             GuildId = guild.Id,
                             ChannelId = hotChannel.Id,
                             SelfDeaf = false,
-                            SelfMute = true
+                            SelfMute = false
                         }
                     });
                 }
@@ -111,6 +111,7 @@ namespace Discord_UWP
         {
             Debug.WriteLine("Closing socket...");
             _gateway.CloseSocket();
+            _voice?.CloseSocket();
         }
     }
 }
