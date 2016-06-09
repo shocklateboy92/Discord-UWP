@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Concentus;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,6 +12,8 @@ using Windows.Networking;
 using Windows.Networking.Sockets;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using Concentus.Structs;
+using Concentus.Common.CPlusPlus;
 
 namespace Discord_UWP
 {
@@ -18,6 +21,7 @@ namespace Discord_UWP
     {
         private DatagramSocket _udpSocket;
         private DataWriter _udpWriter;
+        private OpusDecoder _decoder;
 
         public string Endpoint { get; set; }
         public string ServerId { get; set; }
@@ -26,6 +30,14 @@ namespace Discord_UWP
         public object Token { get; set; }
         public short? LocalPort { get; private set; }
         public int Ssrc { get; private set; }
+
+        public VoiceSocket()
+        {
+            // note: do this beforehand
+            var error = new BoxedValue<int>(7);
+            _decoder = opus_decoder.opus_decoder_create(48000, 2, error);
+            Debug.Assert(error.Val == 0);
+        }
 
         protected override Task<Uri> GetGatewayUrl()
         {
@@ -123,21 +135,44 @@ namespace Discord_UWP
             }
             else
             {
-                var packetLength = reader.UnconsumedBufferLength;
+                var header = new byte[12];
+                reader.ReadBytes(header);
+                if (header[0] != 0x80) return; //flags
+                if (header[1] != 0x78) return; //payload type. you know, from before.
+
+                ushort sequenceNumber = (ushort)((header[2] << 8) | header[3] << 0);
+                uint timDocuestamp = (uint)((header[4] << 24) | header[5] << 16 | header[6] << 8 | header[7] << 0);
+                uint ssrc = (uint)((header[8] << 24) | (header[9] << 16) | (header[10] << 8) | (header[11] << 0));
+
+                int packetLength = (int) reader.UnconsumedBufferLength;
                 byte[] packet = new byte[packetLength];
                 reader.ReadBytes(packet);
+                
+                if (packetLength < 12)
+                {
+                    return;
+                }
 
-                if (packetLength < 12) return; //irrelevant packet
-                if (packet[0] != 0x80) return; //flags
-                if (packet[1] != 0x78) return; //payload type. you know, from before.
+                Log.WriteLine($"Decoding voice data: FromSsrc = {ssrc}, SequenceNumber = {sequenceNumber}, Timestamp = {timDocuestamp}, PacketSize = {packetLength}");
+                var num_frames = opus_decoder.opus_packet_get_nb_frames(packet.GetPointer(), packetLength);
+                //Log.WriteLine($"{num_frames} frames.");
+                //Log.WriteLine($"Data = [{string.Join(", ", packet.Select(x => (int)x))}]");
 
-                ushort sequenceNumber = (ushort)((packet[2] << 8) | packet[3] << 0);
-                uint timDocuestamp = (uint)((packet[4] << 24) | packet[5] << 16 | packet[6] << 8 | packet[7] << 0);
-                uint ssrc = (uint)((packet[8] << 24) | (packet[9] << 16) | (packet[10] << 8) | (packet[11] << 0));
+                int frame_size = 5760;
+                var pcm = new short[frame_size * sizeof(short) * 2];
 
-                Log.WriteLine($"Decoding voice data: FromSsrc = {ssrc}, SequenceNumber = {sequenceNumber}, Timestamp = {timDocuestamp}...");
+                var error = opus_decoder.opus_decode(_decoder, packet.GetPointer(), packetLength, pcm.GetPointer(), frame_size, 0);
+                if (error < 0)
+                {
+                    Log.WriteLine("Failed to decode with error: " + error);
+                }
+
+                uint count = (uint) pcm.Count(c => c != 0);
+                if (count > 0)
+                {
+                    Log.WriteLine($"Got decoded data of length {count}/{error*2}");
+                }
             }
-
             //Log.WriteLine($"Got SSRC({ssrc}) IP addr: {strAddress}");
             //Log.WriteLine("udp recv: " + data);
         }
