@@ -42,7 +42,8 @@ namespace Discord_UWP
         private AudioFrameInputNode _inputFrame;
         private object _inputFrameLock = new object();
         private AudioDeviceOutputNode _outputNode;
-        private Queue<AudioFrame> _packetQueue;
+        private ConcurrentQueue<short> _sampleQueue;
+        private BinaryWriter _outStream;
 
         public string Endpoint { get; set; }
         public string ServerId { get; set; }
@@ -56,13 +57,18 @@ namespace Discord_UWP
         {
             // note: do this beforehand
             var error = new BoxedValue<int>(7);
-            _decoder = opus_decoder.opus_decoder_create(SampleRate, 2, error);
+            _decoder = opus_decoder.opus_decoder_create(48000, 2, error);
             Debug.Assert(error.Val == 0);
 
-            _packetQueue = new Queue<AudioFrame>();
+            _sampleQueue = new ConcurrentQueue<short>();
 
             Task.Run(async () => {
-                var graph = await AudioGraph.CreateAsync(new AudioGraphSettings(AudioRenderCategory.Communications));
+                var graph = await AudioGraph.CreateAsync(
+                    new AudioGraphSettings(AudioRenderCategory.Communications)
+                    {
+                        EncodingProperties = AudioEncodingProperties.CreatePcm(SampleRate, 2, 16),
+                    }
+                );
                 Debug.Assert(graph.Status == AudioGraphCreationStatus.Success);
                 _audioGraph = graph.Graph;
                 var dev = await _audioGraph.CreateDeviceOutputNodeAsync();
@@ -72,6 +78,8 @@ namespace Discord_UWP
                 //{
                 //    ChannelCount = 2,
                 //});
+                var file = await ApplicationData.Current.LocalCacheFolder.CreateFileAsync("output.pcm", CreationCollisionOption.ReplaceExisting);
+                _outStream = new BinaryWriter(await file.OpenStreamForWriteAsync());
             });
         }
 
@@ -191,13 +199,14 @@ namespace Discord_UWP
 
                 Log.WriteLine($"Decoding voice data: FromSsrc = {ssrc}, SequenceNumber = {sequenceNumber}, Timestamp = {timDocuestamp}, PacketSize = {packetLength}");
                 var num_frames = opus_decoder.opus_packet_get_nb_frames(packet.GetPointer(), packetLength);
-                var num_channels = opus_decoder.opus_packet_get_nb_channels(packet.GetPointer());
-                var num_samples = opus_decoder.opus_packet_get_nb_samples(packet.GetPointer(), packetLength, SampleRate);
+                //var num_channels = opus_decoder.opus_packet_get_nb_channels(packet.GetPointer());
+                var num_channels = 2;
+                var num_samples = opus_decoder.opus_packet_get_nb_samples(packet.GetPointer(), packetLength, 48000);
                 //Log.WriteLine($"{num_frames} frames.");
                 //Log.WriteLine($"Data = [{string.Join(", ", packet.Select(x => (int)x))}]");
 
                 int frame_size = 5760;
-                var pcm = new short[frame_size * 2];
+                var pcm = new short[frame_size * num_channels];
 
                 var processed = opus_decoder.opus_decode(_decoder, packet.GetPointer(), packetLength, pcm.GetPointer(), frame_size, 0);
                 if (processed < 0)
@@ -208,7 +217,7 @@ namespace Discord_UWP
                 uint count = (uint)pcm.Count(c => c != 0);
                 if (count > 0)
                 {
-                    Log.WriteLine($"Got decoded data of length {count}/{processed * 2}");
+                    Log.WriteLine($"Got decoded data of length {count}/{processed * sizeof(short)}");
                 }
 
                 if (_inputFrame == null)
@@ -220,35 +229,66 @@ namespace Discord_UWP
                             _inputFrame = _audioGraph.CreateFrameInputNode(
                                 AudioEncodingProperties.CreatePcm(
                                     SampleRate, (uint)num_channels,
-                                    (uint)(processed * 2 / num_samples * 8)
+                                    sizeof(short) * 8
                                 )
                             );
                             _inputFrame.AddOutgoingConnection(_outputNode);
+                            _inputFrame.QuantumStarted += _inputFrame_QuantumStarted;
                             _audioGraph.Start();
                         }
                     }
                 }
 
-                try
+                //var period = processed * 24;
+                //for (int i = 0; i < period; i++)
+                //{
+                //    _packetQueue.Enqueue((short)(short.MaxValue * Math.Sin(((double)i) / period * Math.PI * 2)));
+                //}
+
+                for (int i = 0; i < processed * num_channels; i++)
                 {
-                    lock (_inputFrameLock)
-                    {
-                        ProcessPcmData(pcm, processed * 2, num_samples);
-                    }
+                    _sampleQueue.Enqueue(pcm[i]);
                 }
-                catch (Exception ex)
-                {
-                    Log.WriteLine($"Got {ex.GetType().Name} with HResult = {ex.HResult}: {ex.Message}");
-                }
+
+                //try
+                //{
+                //    lock (_inputFrameLock)
+                //    {
+                //        ProcessPcmData(pcm, processed * 2, num_samples);
+                //    }
+                //}
+                //catch (Exception ex)
+                //{
+                //    Log.WriteLine($"Got {ex.GetType().Name} with HResult = {ex.HResult}: {ex.Message}");
+                //}
             }
             //Log.WriteLine($"Got SSRC({ssrc}) IP addr: {strAddress}");
             //Log.WriteLine("udp recv: " + data);
         }
 
-        unsafe private void ProcessPcmData(short[] pcm, int dataLen, int num_samples)
+        static int freq = 420;
+        double last_rad = 0;
+        static double radsPerSample = freq * 2 * Math.PI / SampleRate;
+        private void _inputFrame_QuantumStarted(AudioFrameInputNode sender, FrameInputNodeQuantumStartedEventArgs args)
+        {
+            if (0 < args.RequiredSamples)
+            {
+                //for (int i = 0; i < args.RequiredSamples; i++)
+                //{
+                //    _packetQueue.Enqueue((short)(Math.Sin(last_rad) * short.MaxValue));
+                //    _packetQueue.Enqueue((short)(Math.Sin(last_rad) * short.MaxValue));
+                //    last_rad += radsPerSample;
+                //}
+                if (args.RequiredSamples * sender.EncodingProperties.ChannelCount > _sampleQueue.Count) { return; }
+                ProcessPcmData(args.RequiredSamples);
+            }
+        }
+
+        unsafe private void ProcessPcmData(int num_samples)
         {
             var eprop = _inputFrame.EncodingProperties;
-            var frame = new AudioFrame((uint)dataLen);
+            Debug.Assert(eprop.ChannelCount == 2);
+            var frame = new AudioFrame((uint)num_samples * eprop.BitsPerSample / 8 * eprop.ChannelCount);
             using (AudioBuffer buffer = frame.LockBuffer(AudioBufferAccessMode.Write))
             {
                 using (IMemoryBufferReference reference = buffer.CreateReference())
@@ -256,9 +296,14 @@ namespace Discord_UWP
                     byte* dataInBytes;
                     uint capacityInBytes;
                     ((IMemoryBufferByteAccess)reference).GetBuffer(out dataInBytes, out capacityInBytes);
-                    //Debug.Assert(capacityInBytes > dataLen);
+                    Debug.Assert(capacityInBytes >= num_samples * sizeof(short));
 
-                    Marshal.Copy(pcm, 0, (IntPtr)dataInBytes, dataLen / 2);
+                    short* dataInShort = (short*) dataInBytes;
+                    for (int i = 0; i < num_samples * 2; i++)
+                    {
+                        var success = _sampleQueue.TryDequeue(out dataInShort[i]);
+                        Debug.Assert(success);
+                    }
                 }
             }
 
@@ -268,6 +313,10 @@ namespace Discord_UWP
             //    while (_packetQueue.Count > 0)
             //    {
                     _inputFrame.AddFrame(frame);
+            //foreach (short i in pcm.Take(dataLen))
+            //{
+            //    _outStream.Write(i);
+            //}
             //    }
             //}
         }
