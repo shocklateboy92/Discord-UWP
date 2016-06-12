@@ -116,7 +116,7 @@ namespace Discord_UWP
         public static async Task InitializeApplication()
         {
             await AuthManager.DoAuthentication();
-            await new DiscordClient().UpdateGateway();
+            await Client.UpdateGateway();
         }
     }
 }

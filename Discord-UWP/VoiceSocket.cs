@@ -21,6 +21,7 @@ using Windows.Media;
 using Windows.Foundation;
 using System.Runtime.InteropServices;
 using System.Collections.Concurrent;
+using Concentus.Opus.Enums;
 
 namespace Discord_UWP
 {
@@ -35,13 +36,14 @@ namespace Discord_UWP
     class VoiceSocket : AbstractSocket
     {
         private const int SampleRate = 48000;
+        public const int NumChannels = 2;
         private DatagramSocket _udpSocket;
         private DataWriter _udpWriter;
         private OpusDecoder _decoder;
         private AudioGraph _audioGraph;
         private AudioFrameInputNode _inputFrame;
         private object _inputFrameLock = new object();
-        private AudioDeviceOutputNode _outputNode;
+        private AudioDeviceOutputNode _speakersOutNode;
         private ConcurrentQueue<short> _sampleQueue;
         private BinaryWriter _outStream;
 
@@ -60,9 +62,13 @@ namespace Discord_UWP
             _decoder = opus_decoder.opus_decoder_create(48000, 2, error);
             Debug.Assert(error.Val == 0);
 
+            _encoder = opus_encoder.opus_encoder_create(SampleRate, NumChannels, OpusApplication.OPUS_APPLICATION_VOIP, error);
+            Debug.Assert(error.Val == 0);
+
             _sampleQueue = new ConcurrentQueue<short>();
 
-            Task.Run(async () => {
+            Task.Run(async () =>
+            {
                 var graph = await AudioGraph.CreateAsync(
                     new AudioGraphSettings(AudioRenderCategory.Communications)
                     {
@@ -73,13 +79,38 @@ namespace Discord_UWP
                 _audioGraph = graph.Graph;
                 var dev = await _audioGraph.CreateDeviceOutputNodeAsync();
                 Debug.Assert(dev.Status == AudioDeviceNodeCreationStatus.Success);
-                _outputNode = dev.DeviceOutputNode;
-                //_inputFrame = _audioGraph.CreateFrameInputNode(new AudioEncodingProperties
-                //{
-                //    ChannelCount = 2,
-                //});
-                var file = await ApplicationData.Current.LocalCacheFolder.CreateFileAsync("output.pcm", CreationCollisionOption.ReplaceExisting);
-                _outStream = new BinaryWriter(await file.OpenStreamForWriteAsync());
+                _speakersOutNode = dev.DeviceOutputNode;
+
+                _inputFrame = _audioGraph.CreateFrameInputNode(
+                    AudioEncodingProperties.CreatePcm(
+                        SampleRate, NumChannels,
+                        sizeof(short) * 8
+                    )
+                );
+                _inputFrame.AddOutgoingConnection(_speakersOutNode);
+                _inputFrame.QuantumStarted += _inputFrame_QuantumStarted;
+                _audioGraph.Start();
+
+                var g2Result = await AudioGraph.CreateAsync(
+                    new AudioGraphSettings(AudioRenderCategory.Communications)
+                    {
+                        EncodingProperties = AudioEncodingProperties.CreatePcm(SampleRate, 2, 16),
+                    }
+                );
+                Debug.Assert(g2Result.Status == AudioGraphCreationStatus.Success);
+                _ouputGraph = g2Result.Graph;
+                Debug.Assert(!Equals(_audioGraph, _ouputGraph));
+                Debug.Assert(!ReferenceEquals(_audioGraph, _ouputGraph));
+                _ouputGraph.Stop();
+                var inputNodeResult = await _ouputGraph.CreateDeviceInputNodeAsync(Windows.Media.Capture.MediaCategory.Communications);
+                Debug.Assert(inputNodeResult.Status == AudioDeviceNodeCreationStatus.Success);
+
+                _micOutputNode = _ouputGraph.CreateFrameOutputNode(AudioEncodingProperties.CreatePcm(48000, 2, sizeof(short)));
+                //_micOutputNode.Stop();
+                _ouputGraph.QuantumProcessed += _audioGraph_QuantumProcessed;
+
+                inputNodeResult.DeviceInputNode.AddOutgoingConnection(_micOutputNode);
+                _ouputGraph.Start();
             });
         }
 
@@ -176,6 +207,8 @@ namespace Discord_UWP
                         },
                     }
                 });
+
+                await StartSendingVoice();
             }
             else
             {
@@ -220,25 +253,6 @@ namespace Discord_UWP
                     Log.WriteLine($"Got decoded data of length {count}/{processed * sizeof(short)}");
                 }
 
-                if (_inputFrame == null)
-                {
-                    lock (_inputFrameLock)
-                    {
-                        if (_inputFrame == null)
-                        {
-                            _inputFrame = _audioGraph.CreateFrameInputNode(
-                                AudioEncodingProperties.CreatePcm(
-                                    SampleRate, (uint)num_channels,
-                                    sizeof(short) * 8
-                                )
-                            );
-                            _inputFrame.AddOutgoingConnection(_outputNode);
-                            _inputFrame.QuantumStarted += _inputFrame_QuantumStarted;
-                            _audioGraph.Start();
-                        }
-                    }
-                }
-
                 //var period = processed * 24;
                 //for (int i = 0; i < period; i++)
                 //{
@@ -266,9 +280,85 @@ namespace Discord_UWP
             //Log.WriteLine("udp recv: " + data);
         }
 
+        private async Task StartSendingVoice()
+        {
+            await Task.Delay(3000);
+            //await SendMessage(new
+            //{
+            //    op = 5,
+            //    d = new
+            //    {
+            //        user_id = App.Client.UserId,
+            //        ssrc = Ssrc,
+            //        speaking = true
+            //    }
+            //});
+            _ouputGraph.Start();
+        }
+
+        ConcurrentQueue<short> _outgoingSampleQueue = new ConcurrentQueue<short>();
+
+        private async void _audioGraph_QuantumProcessed(AudioGraph sender, object args)
+        {
+            try
+            {
+                //Log.WriteLine($"Attempting to send voice data for {_audioGraph.SamplesPerQuantum} samples");
+
+                var audioFrame = _micOutputNode.GetFrame();
+                //var data = GetDataFromFrame(audioFrame);
+
+                //var encodedData = new byte[data.Length * sizeof(short)];
+                //var encodedLen = opus_encoder.opus_encode(_encoder, data.GetPointer(), data.Length, encodedData.GetPointer(), encodedData.Length);
+
+                //_udpWriter.WriteByte(0x80);
+                //_udpWriter.WriteByte(0x78);
+
+                //_udpWriter.WriteUInt16((ushort)IPAddress.HostToNetworkOrder((short)__sequenceNumber++));
+                //_udpWriter.WriteUInt32((uint)IPAddress.HostToNetworkOrder(DateTime.Now.Ticks));
+                //_udpWriter.WriteUInt32((uint)IPAddress.HostToNetworkOrder(Ssrc));
+
+                //_udpWriter.WriteBytes(encodedData.Take(encodedLen).ToArray());
+                //await _udpWriter.StoreAsync();
+
+                Log.WriteLine($"Sent voice data packet of length ");
+            }
+            catch (Exception ex)
+            {
+                Log.LogExceptionCatch(ex);
+                _micOutputNode.Start();
+            }
+        }
+
+        private unsafe short[] GetDataFromFrame(AudioFrame frame)
+        {
+            using (var buffer = frame.LockBuffer(AudioBufferAccessMode.Read))
+            {
+                using (var reference = buffer.CreateReference())
+                {
+                    byte* buf;
+                    uint length;
+                    ((IMemoryBufferByteAccess)reference).GetBuffer(out buf, out length);
+                    short* typedbuf = (short*)buf;
+
+                    var data = new short[length / sizeof(short)];
+                    for (int i = 0; i < length / sizeof(short); i++)
+                    {
+                        //_outgoingSampleQueue.Enqueue(typedbuf[i]);
+                        data[i] = typedbuf[i];
+                    }
+                    return data;
+                }
+            }
+        }
+
         static int freq = 420;
         double last_rad = 0;
         static double radsPerSample = freq * 2 * Math.PI / SampleRate;
+        private AudioFrameOutputNode _micOutputNode;
+        private OpusEncoder _encoder;
+        private int __sequenceNumber;
+        private AudioGraph _ouputGraph;
+
         private void _inputFrame_QuantumStarted(AudioFrameInputNode sender, FrameInputNodeQuantumStartedEventArgs args)
         {
             if (0 < args.RequiredSamples)

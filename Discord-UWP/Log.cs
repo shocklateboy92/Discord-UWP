@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using Windows.ApplicationModel.Core;
 using Windows.UI.Core;
 
@@ -11,12 +12,15 @@ namespace Discord_UWP
 
         public static void WriteLine(string line)
         {
-            //CoreApplication.GetCurrentView().CoreWindow.Dispatcher.RunAsync(
-            //    CoreDispatcherPriority.Normal, () => CurrentMessages.Add(line)
-            //).AsTask();
+            Debug.WriteLine(line);
             CoreApplication.MainView.Dispatcher.RunAsync(
                 CoreDispatcherPriority.Normal, () => CurrentMessages.Add(line)
             ).AsTask();
+        }
+
+        internal static void LogExceptionCatch(Exception ex)
+        {
+            WriteLine($"Error({ex.GetType().Name}, {ex.HResult}): {ex.Message}");
         }
     }
 }

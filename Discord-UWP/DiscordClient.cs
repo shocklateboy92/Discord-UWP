@@ -20,6 +20,8 @@ namespace Discord_UWP
         private GatewaySocket _gateway;
         private VoiceSocket _voice;
 
+        public string UserId { get; private set; }
+
         public DiscordClient()
         {
             _gateway = new GatewaySocket
@@ -35,6 +37,7 @@ namespace Discord_UWP
 
         private async void OnInitialStateReceived(D initialState)
         {
+            UserId = initialState.User.Id;
             foreach (var guild in initialState.Guilds)
             {
                 var voiceChannels = guild.Channels.Where(c => string.Compare(c.Type, "voice", ignoreCase: true) == 0).Select(c => $"'{c.Name}' ({c.Id})");
