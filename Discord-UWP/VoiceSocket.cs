@@ -21,14 +21,15 @@ using Windows.Media;
 using Windows.Foundation;
 using System.Runtime.InteropServices;
 using System.Collections.Concurrent;
-using Concentus.Opus.Enums;
+using Concentus.Enums;
+using System.Threading;
 
 namespace Discord_UWP
 {
     class VoiceSocket : AbstractSocket
     {
         private const int SampleRate = 48000;
-        public const int NumChannels = 2;
+        public const int NumChannels = 1;
         private DatagramSocket _udpSocket;
         private DataWriter _udpWriter;
         private AudioGraph _audioGraph;
@@ -45,9 +46,7 @@ namespace Discord_UWP
 
         public VoiceSocket()
         {
-            var error = new BoxedValue<int>(7);
-            _encoder = opus_encoder.opus_encoder_create(SampleRate, NumChannels, OpusApplication.OPUS_APPLICATION_VOIP, error);
-            Debug.Assert(error.Val == 0);
+            CreateEncoder();
 
             _sampleQueue = new ConcurrentQueue<short>();
 
@@ -56,7 +55,7 @@ namespace Discord_UWP
                 var graph = await AudioGraph.CreateAsync(
                     new AudioGraphSettings(AudioRenderCategory.Communications)
                     {
-                        EncodingProperties = AudioEncodingProperties.CreatePcm(SampleRate, 2, 16),
+                        EncodingProperties = AudioEncodingProperties.CreatePcm(SampleRate, VoiceDecoder.NumChannels, 16),
                     }
                 );
                 Debug.Assert(graph.Status == AudioGraphCreationStatus.Success);
@@ -73,7 +72,7 @@ namespace Discord_UWP
                 var g2Result = await AudioGraph.CreateAsync(
                     new AudioGraphSettings(AudioRenderCategory.Communications)
                     {
-                        EncodingProperties = AudioEncodingProperties.CreatePcm(SampleRate, 2, 16),
+                        EncodingProperties = AudioEncodingProperties.CreatePcm(SampleRate, NumChannels, 16),
                     }
                 );
                 Debug.Assert(g2Result.Status == AudioGraphCreationStatus.Success);
@@ -89,7 +88,6 @@ namespace Discord_UWP
                 _ouputGraph.QuantumProcessed += _audioGraph_QuantumProcessed;
 
                 inputNodeResult.DeviceInputNode.AddOutgoingConnection(_micOutputNode);
-                _ouputGraph.Start();
             });
         }
 
@@ -153,6 +151,8 @@ namespace Discord_UWP
                         delay = 0
                     }
                 });
+
+                //await _audioGraph_QuantumProcessed(null, null);
             }
         }
 
@@ -227,39 +227,103 @@ namespace Discord_UWP
             //        speaking = true
             //    }
             //});
-            _ouputGraph.Start();
+            //_ouputGraph.Start();
+            ticker = new Timer((o) => _audioGraph_QuantumProcessed(null, null), null, 0, frameSize * 1000 / SampleRate);
         }
+        Timer ticker;
 
         ConcurrentQueue<short> _outgoingSampleQueue = new ConcurrentQueue<short>();
 
+                int frameSize = 1920 * NumChannels;
+        private void CreateEncoder()
+        {
+            var error = new BoxedValue<int>(7);
+            _encoder = OpusEncoder.Create(SampleRate, NumChannels, OpusApplication.OPUS_APPLICATION_AUDIO, error);
+            Debug.Assert(error.Val == 0);
+        }
+
+        private static readonly int freq = 440;
+        private double _lastRad = 0;
+        private static readonly double _radInc = freq * Math.PI * 2 / SampleRate;
         private void _audioGraph_QuantumProcessed(AudioGraph sender, object args)
         {
             try
             {
                 //Log.WriteLine($"Attempting to send voice data for {_audioGraph.SamplesPerQuantum} samples");
 
-                var audioFrame = _micOutputNode.GetFrame();
+                //var audioFrame = _micOutputNode.GetFrame();
+                ////Log.WriteLine($"Got frame of time {audioFrame.RelativeTime.Value.TotalMilliseconds}, {audioFrame.SystemRelativeTime}");
                 //var data = GetDataFromFrame(audioFrame);
 
-                //var encodedData = new byte[data.Length * sizeof(short)];
-                //var encodedLen = opus_encoder.opus_encode(_encoder, data.GetPointer(), data.Length, encodedData.GetPointer(), encodedData.Length);
+                //if (data.Length == 0)
+                //{
+                //    Log.WriteLine("Got Empty frame");
+                //    return;
+                //}
+
+                //int frameSize = (int) Math.Round((double) SampleRate * (60/1000) * NumChannels);
+                var data = new short[frameSize];
+                for (int i = 0; i < frameSize; i++)
+                {
+                    data[i] = (short) (Math.Sin(_lastRad) * short.MaxValue);
+                    //if (i % 2 == 0)
+                    _lastRad += _radInc;
+                }
+
+                var encodedData = new byte[data.Length * sizeof(short) * NumChannels];
+                //var encodedLen = opus_encoder.opus_encode(_encoder, data.GetPointer(), frameSize, encodedData.GetPointer(), encodedData.Length * 2);
+                var encodedLen = _encoder.Encode(data, 0, frameSize, encodedData, 0, encodedData.Length);
+
+                //Debug.Assert(encodedData.Any(x => x != 0));
+                //Debug.Assert(encodedData.Count(x => x != 0) == encodedLen);
+                //for (int i = encodedLen; i <encodedData.Length; i++)
+                //{
+                //    Debug.Assert(encodedData[i] == 0);
+                //}
+                while (encodedData[encodedLen] != 0)
+                {
+                    encodedLen++;
+                }
+
+                byte[] header = new byte[12];
+
+                header[0] = (byte)0x80; //flags
+                header[1] = (byte)0x78; //flags
+
+                header[8] = (byte)((Ssrc >> 24) & 0xFF); //ssrc
+                header[9] = (byte)((Ssrc >> 16) & 0xFF); //ssrc
+                header[10] = (byte)((Ssrc >> 8) & 0xFF); //ssrc
+                header[11] = (byte)((Ssrc >> 0) & 0xFF); //ssrc
+
+                //sequence big endian
+                header[2] = (byte)((___sequence >> 8));
+                header[3] = (byte)((___sequence >> 0) & 0xFF);
+                ___sequence++;
+
+                //timestamp big endian
+                header[4] = (byte)((___timestamp >> 24) & 0xFF);
+                header[5] = (byte)((___timestamp >> 16) & 0xFF);
+                header[6] = (byte)((___timestamp >> 8));
+                header[7] = (byte)((___timestamp >> 0) & 0xFF);
 
                 //_udpWriter.WriteByte(0x80);
                 //_udpWriter.WriteByte(0x78);
 
-                //_udpWriter.WriteUInt16((ushort)IPAddress.HostToNetworkOrder((short)__sequenceNumber++));
-                //_udpWriter.WriteUInt32((uint)IPAddress.HostToNetworkOrder(DateTime.Now.Ticks));
+                //_udpWriter.WriteUInt16((ushort)IPAddress.HostToNetworkOrder((short)___sequence++));
+                ////_udpWriter.WriteUInt32((uint)IPAddress.HostToNetworkOrder((uint)audioFrame.RelativeTime?.TotalMilliseconds));
+                //_udpWriter.WriteUInt32((uint)IPAddress.HostToNetworkOrder(___timestamp));
                 //_udpWriter.WriteUInt32((uint)IPAddress.HostToNetworkOrder(Ssrc));
 
-                //_udpWriter.WriteBytes(encodedData.Take(encodedLen).ToArray());
-                //await _udpWriter.StoreAsync();
+                _udpWriter.WriteBytes(header);
+                _udpWriter.WriteBytes(encodedData.Take(encodedLen).ToArray());
+                _udpWriter.StoreAsync().AsTask().Wait();
 
-                Log.WriteLine($"Sent voice data packet of length ");
+                ___timestamp += (uint) frameSize;
+                //Log.WriteLine($"Sent voice data packet of length ");
             }
             catch (Exception ex)
             {
                 Log.LogExceptionCatch(ex);
-                _micOutputNode.Start();
             }
         }
 
@@ -274,11 +338,12 @@ namespace Discord_UWP
                     ((IMemoryBufferByteAccess)reference).GetBuffer(out buf, out length);
                     short* typedbuf = (short*)buf;
 
-                    var data = new short[length / sizeof(short)];
+                    var data = new short[length / sizeof(short) * NumChannels];
                     for (int i = 0; i < length / sizeof(short); i++)
                     {
                         //_outgoingSampleQueue.Enqueue(typedbuf[i]);
                         data[i] = typedbuf[i];
+                        //data[i * 2 + 1] = typedbuf[i];
                     }
                     return data;
                 }
@@ -289,5 +354,7 @@ namespace Discord_UWP
         private OpusEncoder _encoder;
         private AudioGraph _ouputGraph;
         private VoiceDecoder _default;
+        private int ___sequence;
+        private uint ___timestamp;
     }
 }

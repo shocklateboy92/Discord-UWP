@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Windows.Media.Audio;
 using Windows.Media.MediaProperties;
 using Concentus.Structs;
-using Concentus.Opus.Enums;
+using Concentus.Enums;
 using Windows.Media;
 
 namespace Discord_UWP
@@ -35,7 +35,7 @@ namespace Discord_UWP
             Ssrc = ssrc;
 
             BoxedValue<int> error = new BoxedValue<int>();
-            _decoderState = opus_decoder.opus_decoder_create(
+            _decoder = OpusDecoder.Create(
                 SampleRate,
                 NumChannels,
                 error
@@ -55,13 +55,14 @@ namespace Discord_UWP
         {
             lock (_decodeLock)
             {
-                var samplesDecoded = opus_decoder.opus_decode(
-                    _decoderState,
-                    packet.GetPointer(),
+                var samplesDecoded = _decoder.Decode(
+                    packet,
+                    0,
                     packet.Length,
-                    _decodeBuffer.GetPointer(),
+                    _decodeBuffer,
+                    0,
                     MaxFrameSize,
-                    0
+                    false
                 );
 
                 var frame = CreateFrame(_decodeBuffer, samplesDecoded);
@@ -96,6 +97,6 @@ namespace Discord_UWP
 
         private short[] _decodeBuffer = new short[MaxFrameSize * NumChannels];
         private object _decodeLock = new object();
-        private OpusDecoder _decoderState;
+        private OpusDecoder _decoder;
     }
 }
