@@ -71,7 +71,7 @@ namespace Discord_UWP
             }
         }
 
-        unsafe private static AudioFrame CreateFrame(short[] _decodeBuffer, int numSamples)
+        unsafe public static AudioFrame CreateFrame(short[] _decodeBuffer, int numSamples)
         {
             var frame = new AudioFrame((uint)numSamples * sizeof(short) * NumChannels);
             using (AudioBuffer buf = frame.LockBuffer(AudioBufferAccessMode.Write))
