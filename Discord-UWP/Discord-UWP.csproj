@@ -116,6 +116,7 @@
     <Compile Include="MessageHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VoiceDecoder.cs" />
+    <Compile Include="VoiceEncoder.cs" />
     <Compile Include="VoiceSocket.cs" />
   </ItemGroup>
   <ItemGroup>

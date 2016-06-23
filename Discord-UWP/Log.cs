@@ -22,5 +22,10 @@ namespace Discord_UWP
         {
             WriteLine($"Error({ex.GetType().Name}, {ex.HResult}): {ex.Message}");
         }
+
+        internal static void Warning(string v)
+        {
+            WriteLine($"WARNING: {v}");
+        }
     }
 }

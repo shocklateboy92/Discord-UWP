@@ -30,6 +30,7 @@ namespace Discord_UWP
     {
         private const int SampleRate = 48000;
         public const int NumChannels = 1;
+        public const int BitsPerSample = 16;
         private DatagramSocket _udpSocket;
         private DataWriter _udpWriter;
         private AudioGraph _audioGraph;
@@ -55,7 +56,10 @@ namespace Discord_UWP
                 var graph = await AudioGraph.CreateAsync(
                     new AudioGraphSettings(AudioRenderCategory.Communications)
                     {
-                        EncodingProperties = AudioEncodingProperties.CreatePcm(SampleRate, VoiceDecoder.NumChannels, 16),
+                        EncodingProperties = AudioEncodingProperties.CreatePcm(
+                            SampleRate,
+                            VoiceDecoder.NumChannels,
+                            BitsPerSample),
                     }
                 );
                 Debug.Assert(graph.Status == AudioGraphCreationStatus.Success);
@@ -69,29 +73,19 @@ namespace Discord_UWP
 
                 _audioGraph.Start();
 
-                var g2Result = await AudioGraph.CreateAsync(
+                graph = await AudioGraph.CreateAsync(
                     new AudioGraphSettings(AudioRenderCategory.Communications)
                     {
                         EncodingProperties = AudioEncodingProperties.CreatePcm(SampleRate, NumChannels, 16),
                     }
                 );
-                Debug.Assert(g2Result.Status == AudioGraphCreationStatus.Success);
-                _ouputGraph = g2Result.Graph;
-                Debug.Assert(!Equals(_audioGraph, _ouputGraph));
-                Debug.Assert(!ReferenceEquals(_audioGraph, _ouputGraph));
+                Debug.Assert(graph.Status == AudioGraphCreationStatus.Success);
+                _ouputGraph = graph.Graph;
                 var inputNodeResult = await _ouputGraph.CreateDeviceInputNodeAsync(Windows.Media.Capture.MediaCategory.Communications);
                 Debug.Assert(inputNodeResult.Status == AudioDeviceNodeCreationStatus.Success);
 
-                _micOutputNode = _ouputGraph.CreateFrameOutputNode();
-                _ouputGraph.QuantumProcessed += _audioGraph_QuantumProcessed;
-
-                inputNodeResult.DeviceInputNode.AddOutgoingConnection(_micOutputNode);
-
-                //var dev2 = await _ouputGraph.CreateDeviceOutputNodeAsync();
-                //Debug.Assert(dev2.Status == AudioDeviceNodeCreationStatus.Success);
-
-                //_frameInputNode = _ouputGraph.CreateFrameInputNode(AudioEncodingProperties.CreatePcm(SampleRate, NumChannels, 16));
-                //_frameInputNode.AddOutgoingConnection(dev2.DeviceOutputNode);
+                _voiceInput = new VoiceEncoder(_ouputGraph);
+                inputNodeResult.DeviceInputNode.AddOutgoingConnection(_voiceInput.Node);
             });
         }
 
@@ -220,7 +214,7 @@ namespace Discord_UWP
 
         private async Task StartSendingVoice()
         {
-            await Task.Delay(3000);
+            await Task.Delay(1000);
             //await SendMessage(new
             //{
             //    op = 5,
@@ -231,14 +225,15 @@ namespace Discord_UWP
             //        speaking = true
             //    }
             //});
+            //_ouputGraph.QuantumProcessed += _audioGraph_QuantumProcessed;
             _ouputGraph.Start();
-            ticker = new Timer((o) => _audioGraph_QuantumProcessed(null, null), null, 0, targetFrameSize * 1000 / SampleRate);
+            //Log.WriteLine("Attempting to transmit at interval " + VoiceEncoder.DesiredProcessingInterval);
+            ticker = new Timer((o) => _audioGraph_QuantumProcessed(null, null), null, 0, VoiceEncoder.DesiredProcessingInterval);
         }
         Timer ticker;
 
         ConcurrentQueue<short> _outgoingSampleQueue = new ConcurrentQueue<short>();
 
-                int targetFrameSize = 1920 * NumChannels;
         private void CreateEncoder()
         {
             var error = new BoxedValue<int>(7);
@@ -250,64 +245,10 @@ namespace Discord_UWP
         private double _lastRad = 0;
         private static readonly double _radInc = freq * Math.PI * 2 / SampleRate;
         private object _encoderLock = new object();
-        int[] SupportedFrameSizes = { 120, 240, 480, 960, 1920 };
-        private void _audioGraph_QuantumProcessed(AudioGraph sender, object args)
+        private async void _audioGraph_QuantumProcessed(AudioGraph sender, object args)
         {
             try
             {
-                //Log.WriteLine($"Attempting to send voice data for {_audioGraph.SamplesPerQuantum} samples");
-
-                var audioFrame = _micOutputNode.GetFrame();
-                Debug.Assert(_micOutputNode.EncodingProperties.ChannelCount == NumChannels);
-                //Log.WriteLine($"Got frame of type {_micOutputNode.EncodingProperties.Subtype} with {_micOutputNode.EncodingProperties.BitsPerSample} bits");
-                var data = GetDataFromFrame(audioFrame);
-
-                if (data.Length == 0)
-                {
-                    Log.WriteLine("Got Empty frame");
-                    return;
-                }
-
-                //int frameSize = (int) Math.Round((double) SampleRate * (60/1000) * NumChannels);
-                //var data = new short[frameSize];
-                //for (int i = 0; i < frameSize; i++)
-                //{
-                //    data[i] = (short) (Math.Sin(_lastRad) * short.MaxValue);
-                //    //if (i % 2 == 0)
-                //    _lastRad += _radInc;
-                //}
-                Log.WriteLine($"Got frame of length {data.Length}");
-                int frameSize = 0;
-                foreach (var size in SupportedFrameSizes)
-                {
-                    if (size <= data.Length)
-                    {
-                        frameSize = size;
-                    }
-                }
-
-                var encodedData = new byte[data.Length * sizeof(short) * NumChannels];
-                //var encodedLen = opus_encoder.opus_encode(_encoder, data.GetPointer(), frameSize, encodedData.GetPointer(), encodedData.Length * 2);
-                int encodedLen;
-                //lock (_encoderLock)
-                //{
-                    encodedLen = _encoder.Encode(data, 0, frameSize, encodedData, 0, encodedData.Length);
-                //}
-
-                //Debug.Assert(encodedData.Any(x => x != 0));
-                //Debug.Assert(encodedData.Count(x => x != 0) == encodedLen);
-                //for (int i = encodedLen; i <encodedData.Length; i++)
-                //{
-                //    Debug.Assert(encodedData[i] == 0);
-                //}
-                while (encodedData[encodedLen] != 0)
-                {
-                    encodedLen++;
-                }
-
-                //_default.ProcessPacket(encodedData.Take(encodedLen).ToArray());
-                //var frame = VoiceDecoder.CreateFrame(data, data.Length / VoiceDecoder.NumChannels);
-                //_frameInputNode.AddFrame(frame);
 
                 byte[] header = new byte[12];
 
@@ -339,39 +280,17 @@ namespace Discord_UWP
                 //_udpWriter.WriteUInt32((uint)IPAddress.HostToNetworkOrder(Ssrc));
 
                 _udpWriter.WriteBytes(header);
-                _udpWriter.WriteBytes(encodedData.Take(encodedLen).ToArray());
-                _udpWriter.StoreAsync().AsTask().Wait();
+                int targetFrameSize = 1920 * NumChannels;
+                var voiceData = _voiceInput.GetDataPacket(out targetFrameSize);
+                _udpWriter.WriteBytes(voiceData);
+                await _udpWriter.StoreAsync();
 
-                ___timestamp += (uint) frameSize;
+                ___timestamp += (uint) targetFrameSize;
                 //Log.WriteLine($"Sent voice data packet of length ");
             }
             catch (Exception ex)
             {
                 Log.LogExceptionCatch(ex);
-            }
-        }
-
-        private unsafe short[] GetDataFromFrame(AudioFrame frame)
-        {
-            using (var buffer = frame.LockBuffer(AudioBufferAccessMode.Read))
-            {
-                using (var reference = buffer.CreateReference())
-                {
-                    byte* buf;
-                    uint length;
-                    ((IMemoryBufferByteAccess)reference).GetBuffer(out buf, out length);
-                    float* typedbuf = (float*)buf;
-                    int samples = (int) (length / sizeof(float));
-
-                    var data = new short[samples];
-                    for (int i = 0; i < samples; i++)
-                    {
-                        //_outgoingSampleQueue.Enqueue(typedbuf[i]);
-                        data[i] = (short) (typedbuf[i] * short.MaxValue);
-                        //data[i * 2 + 1] = typedbuf[i];
-                    }
-                    return data;
-                }
             }
         }
 
@@ -382,5 +301,6 @@ namespace Discord_UWP
         private int ___sequence;
         private uint ___timestamp;
         private AudioFrameInputNode _frameInputNode;
+        private VoiceEncoder _voiceInput;
     }
 }
