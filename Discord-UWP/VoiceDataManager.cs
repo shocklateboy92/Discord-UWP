@@ -12,15 +12,7 @@ namespace Discord_UWP
     class VoiceDataManager
     {
         public static readonly uint BitsPerSample = 16;
-
-        private AudioGraph _incomingAudioGraph;
-        private AudioGraph _outgoingAudioGraph;
-
-        private AudioDeviceInputNode _inputDevice;
-        private AudioDeviceOutputNode _outputDevice;
-
-        private IDictionary<uint, VoiceDecoder> 
-            _decoders = new Dictionary<uint, VoiceDecoder>();
+        public event EventHandler<VoicePacket> OutgoingDataReady;
 
         public async Task Initialize()
         {
@@ -28,8 +20,26 @@ namespace Discord_UWP
             await CreateInputDevice();
             await CreateOutputDevice();
 
+            _encoder = new VoiceEncoder(_outgoingAudioGraph);
+            _inputDevice.AddOutgoingConnection(_encoder.Node);
+
             _incomingAudioGraph.Start();
         }
+
+        public void ProcessIncomingData(byte[] data, uint ssrc)
+        {
+            if (!_decoders.ContainsKey(ssrc))
+            {
+                _decoders[ssrc] = new VoiceDecoder(_incomingAudioGraph, ssrc);
+                _decoders[ssrc].Node.AddOutgoingConnection(_outputDevice);
+            }
+
+            _decoders[ssrc].ProcessPacket(data);
+        }
+
+        public void StartOutgoingAudio() => _outgoingAudioGraph.Start();
+
+        public void StopOutgoingAudio() => _outgoingAudioGraph.Stop();
 
         private async Task CreateAudioGraphs()
         {
@@ -76,6 +86,7 @@ namespace Discord_UWP
                 );
             }
             _outgoingAudioGraph = result.Graph;
+            _outgoingAudioGraph.QuantumProcessed += OnOutgoingQuantumProcessed;
         }
 
         private async Task CreateInputDevice()
@@ -112,15 +123,28 @@ namespace Discord_UWP
             _outputDevice = result.DeviceOutputNode;
         }
 
-        public void ProcessIncomingData(byte[] data, uint ssrc)
+        private void OnOutgoingQuantumProcessed(AudioGraph sender, object args)
         {
-            if (!_decoders.ContainsKey(ssrc))
-            {
-                _decoders[ssrc] = new VoiceDecoder(_incomingAudioGraph, ssrc);
-                _decoders[ssrc].Node.AddOutgoingConnection(_outputDevice);
-            }
+            VoicePacket packet = new VoicePacket();
+            packet.Data = _encoder.GetDataPacket(out packet.FrameSize);
 
-            _decoders[ssrc].ProcessPacket(data);
+            OutgoingDataReady?.Invoke(this, packet);
         }
+
+        public struct VoicePacket
+        {
+            public byte[] Data;
+            public int FrameSize;
+        }
+
+        private AudioGraph _incomingAudioGraph;
+        private AudioGraph _outgoingAudioGraph;
+
+        private AudioDeviceInputNode _inputDevice;
+        private AudioDeviceOutputNode _outputDevice;
+
+        private IDictionary<uint, VoiceDecoder> 
+            _decoders = new Dictionary<uint, VoiceDecoder>();
+        private VoiceEncoder _encoder;
     }
 }

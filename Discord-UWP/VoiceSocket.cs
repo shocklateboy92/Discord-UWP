@@ -174,28 +174,15 @@ namespace Discord_UWP
         private async Task StartSendingVoice()
         {
             await Task.Delay(1000);
-            //await SendMessage(new
-            //{
-            //    op = 5,
-            //    d = new
-            //    {
-            //        user_id = App.Client.UserId,
-            //        ssrc = Ssrc,
-            //        speaking = true
-            //    }
-            //});
-            //_ouputGraph.QuantumProcessed += _audioGraph_QuantumProcessed;
-            //Log.WriteLine("Attempting to transmit at interval " + VoiceEncoder.DesiredProcessingInterval);
-            //ticker = new Timer((o) => _audioGraph_QuantumProcessed(null, null), null, 0, VoiceEncoder.DesiredProcessingInterval);
+            _dataManager.OutgoingDataReady += _audioGraph_QuantumProcessed;
+            _dataManager.StartOutgoingAudio();
         }
-        Timer ticker;
 
-        private async void _audioGraph_QuantumProcessed(AudioGraph sender, object args)
+        private async void _audioGraph_QuantumProcessed(object sender, VoiceDataManager.VoicePacket args)
         {
             try
             {
-                int frameSize = 0;
-                var voiceData = _voiceInput.GetDataPacket(out frameSize);
+                var voiceData = args.Data;
                 if (voiceData == null)
                 {
                     return;
@@ -210,7 +197,7 @@ namespace Discord_UWP
                 _udpWriter.WriteBytes(voiceData);
                 await _udpWriter.StoreAsync();
 
-                ___timestamp += (uint) frameSize;
+                ___timestamp += (uint) args.FrameSize;
             }
             catch (Exception ex)
             {
@@ -220,7 +207,6 @@ namespace Discord_UWP
 
         private ushort ___sequence;
         private uint ___timestamp;
-        private VoiceEncoder _voiceInput;
         private VoiceDataManager _dataManager;
     }
 }
