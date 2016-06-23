@@ -27,5 +27,10 @@ namespace Discord_UWP
         {
             WriteLine($"WARNING: {v}");
         }
+
+        internal static void Error(string v)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

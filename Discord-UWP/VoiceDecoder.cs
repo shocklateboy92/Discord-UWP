@@ -20,9 +20,8 @@ namespace Discord_UWP
         public const int MaxFrameSize = 5760;
 
         public AudioFrameInputNode Node { get; private set; }
-        public int Ssrc { get; private set; }
 
-        public VoiceDecoder(AudioGraph graph, int ssrc)
+        public VoiceDecoder(AudioGraph graph, uint ssrc)
         {
             Node = graph.CreateFrameInputNode(
                 AudioEncodingProperties.CreatePcm(
@@ -31,8 +30,6 @@ namespace Discord_UWP
                     BitHelpers.BitsIn(sizeof(short))
                 )
             );
-
-            Ssrc = ssrc;
 
             BoxedValue<int> error = new BoxedValue<int>();
             _decoder = OpusDecoder.Create(
@@ -45,7 +42,7 @@ namespace Discord_UWP
             {
                 Log.WriteLine(string.Format(
                     "Unable to create opus decoder for SSRC {0}: 0x{1}",
-                    Ssrc,
+                    ssrc,
                     error.Val.ToString("X8")
                 ));
             }

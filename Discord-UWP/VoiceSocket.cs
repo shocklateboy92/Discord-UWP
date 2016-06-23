@@ -33,8 +33,6 @@ namespace Discord_UWP
         public const int BitsPerSample = 16;
         private DatagramSocket _udpSocket;
         private DataWriter _udpWriter;
-        private AudioGraph _audioGraph;
-        private AudioDeviceOutputNode _speakersOutNode;
 
         public string Endpoint { get; set; }
         public string ServerId { get; set; }
@@ -46,43 +44,8 @@ namespace Discord_UWP
 
         public VoiceSocket()
         {
-
-            Task.Run(async () =>
-            {
-                var graph = await AudioGraph.CreateAsync(
-                    new AudioGraphSettings(AudioRenderCategory.Communications)
-                    {
-                        EncodingProperties = AudioEncodingProperties.CreatePcm(
-                            SampleRate,
-                            VoiceDecoder.NumChannels,
-                            BitsPerSample),
-                    }
-                );
-                Debug.Assert(graph.Status == AudioGraphCreationStatus.Success);
-                _audioGraph = graph.Graph;
-                var dev = await _audioGraph.CreateDeviceOutputNodeAsync();
-                Debug.Assert(dev.Status == AudioDeviceNodeCreationStatus.Success);
-                _speakersOutNode = dev.DeviceOutputNode;
-
-                _default = new VoiceDecoder(_audioGraph, Ssrc);
-                _default.Node.AddOutgoingConnection(_speakersOutNode);
-
-                _audioGraph.Start();
-
-                graph = await AudioGraph.CreateAsync(
-                    new AudioGraphSettings(AudioRenderCategory.Communications)
-                    {
-                        EncodingProperties = AudioEncodingProperties.CreatePcm(SampleRate, NumChannels, 16),
-                    }
-                );
-                Debug.Assert(graph.Status == AudioGraphCreationStatus.Success);
-                _ouputGraph = graph.Graph;
-                var inputNodeResult = await _ouputGraph.CreateDeviceInputNodeAsync(Windows.Media.Capture.MediaCategory.Communications);
-                Debug.Assert(inputNodeResult.Status == AudioDeviceNodeCreationStatus.Success);
-
-                _voiceInput = new VoiceEncoder(_ouputGraph);
-                inputNodeResult.DeviceInputNode.AddOutgoingConnection(_voiceInput.Node);
-            });
+            _dataManager = new VoiceDataManager();
+            Task.Run(_dataManager.Initialize);
         }
 
         protected override Task<Uri> GetGatewayUrl()
@@ -204,7 +167,7 @@ namespace Discord_UWP
                 }
 
                 Log.WriteLine($"Decoding voice data: FromSsrc = {ssrc}, SequenceNumber = {sequenceNumber}, Timestamp = {timDocuestamp}, PacketSize = {packetLength}");
-                _default.ProcessPacket(packet);
+                _dataManager.ProcessIncomingData(packet, ssrc);
             }
         }
 
@@ -222,9 +185,8 @@ namespace Discord_UWP
             //    }
             //});
             //_ouputGraph.QuantumProcessed += _audioGraph_QuantumProcessed;
-            _ouputGraph.Start();
             //Log.WriteLine("Attempting to transmit at interval " + VoiceEncoder.DesiredProcessingInterval);
-            ticker = new Timer((o) => _audioGraph_QuantumProcessed(null, null), null, 0, VoiceEncoder.DesiredProcessingInterval);
+            //ticker = new Timer((o) => _audioGraph_QuantumProcessed(null, null), null, 0, VoiceEncoder.DesiredProcessingInterval);
         }
         Timer ticker;
 
@@ -256,10 +218,9 @@ namespace Discord_UWP
             }
         }
 
-        private AudioGraph _ouputGraph;
-        private VoiceDecoder _default;
         private ushort ___sequence;
         private uint ___timestamp;
         private VoiceEncoder _voiceInput;
+        private VoiceDataManager _dataManager;
     }
 }
