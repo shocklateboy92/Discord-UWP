@@ -35,7 +35,6 @@ namespace Discord_UWP
         private DataWriter _udpWriter;
         private AudioGraph _audioGraph;
         private AudioDeviceOutputNode _speakersOutNode;
-        private ConcurrentQueue<short> _sampleQueue;
 
         public string Endpoint { get; set; }
         public string ServerId { get; set; }
@@ -47,9 +46,6 @@ namespace Discord_UWP
 
         public VoiceSocket()
         {
-            CreateEncoder();
-
-            _sampleQueue = new ConcurrentQueue<short>();
 
             Task.Run(async () =>
             {
@@ -232,61 +228,27 @@ namespace Discord_UWP
         }
         Timer ticker;
 
-        ConcurrentQueue<short> _outgoingSampleQueue = new ConcurrentQueue<short>();
-
-        private void CreateEncoder()
-        {
-            var error = new BoxedValue<int>(7);
-            _encoder = OpusEncoder.Create(SampleRate, NumChannels, OpusApplication.OPUS_APPLICATION_AUDIO, error);
-            Debug.Assert(error.Val == 0);
-        }
-
-        private static readonly int freq = 440;
-        private double _lastRad = 0;
-        private static readonly double _radInc = freq * Math.PI * 2 / SampleRate;
-        private object _encoderLock = new object();
         private async void _audioGraph_QuantumProcessed(AudioGraph sender, object args)
         {
             try
             {
+                int frameSize = 0;
+                var voiceData = _voiceInput.GetDataPacket(out frameSize);
+                if (voiceData == null)
+                {
+                    return;
+                }
 
-                byte[] header = new byte[12];
+                _udpWriter.WriteByte(0x80);
+                _udpWriter.WriteByte(0x78);
 
-                header[0] = (byte)0x80; //flags
-                header[1] = (byte)0x78; //flags
-
-                header[8] = (byte)((Ssrc >> 24) & 0xFF); //ssrc
-                header[9] = (byte)((Ssrc >> 16) & 0xFF); //ssrc
-                header[10] = (byte)((Ssrc >> 8) & 0xFF); //ssrc
-                header[11] = (byte)((Ssrc >> 0) & 0xFF); //ssrc
-
-                //sequence big endian
-                header[2] = (byte)((___sequence >> 8));
-                header[3] = (byte)((___sequence >> 0) & 0xFF);
-                ___sequence++;
-
-                //timestamp big endian
-                header[4] = (byte)((___timestamp >> 24) & 0xFF);
-                header[5] = (byte)((___timestamp >> 16) & 0xFF);
-                header[6] = (byte)((___timestamp >> 8));
-                header[7] = (byte)((___timestamp >> 0) & 0xFF);
-
-                //_udpWriter.WriteByte(0x80);
-                //_udpWriter.WriteByte(0x78);
-
-                //_udpWriter.WriteUInt16((ushort)IPAddress.HostToNetworkOrder((short)___sequence++));
-                ////_udpWriter.WriteUInt32((uint)IPAddress.HostToNetworkOrder((uint)audioFrame.RelativeTime?.TotalMilliseconds));
-                //_udpWriter.WriteUInt32((uint)IPAddress.HostToNetworkOrder(___timestamp));
-                //_udpWriter.WriteUInt32((uint)IPAddress.HostToNetworkOrder(Ssrc));
-
-                _udpWriter.WriteBytes(header);
-                int targetFrameSize = 1920 * NumChannels;
-                var voiceData = _voiceInput.GetDataPacket(out targetFrameSize);
+                _udpWriter.WriteUInt16(___sequence++);
+                _udpWriter.WriteUInt32(___timestamp);
+                _udpWriter.WriteUInt32((uint) Ssrc);
                 _udpWriter.WriteBytes(voiceData);
                 await _udpWriter.StoreAsync();
 
-                ___timestamp += (uint) targetFrameSize;
-                //Log.WriteLine($"Sent voice data packet of length ");
+                ___timestamp += (uint) frameSize;
             }
             catch (Exception ex)
             {
@@ -294,13 +256,10 @@ namespace Discord_UWP
             }
         }
 
-        private AudioFrameOutputNode _micOutputNode;
-        private OpusEncoder _encoder;
         private AudioGraph _ouputGraph;
         private VoiceDecoder _default;
-        private int ___sequence;
+        private ushort ___sequence;
         private uint ___timestamp;
-        private AudioFrameInputNode _frameInputNode;
         private VoiceEncoder _voiceInput;
     }
 }
