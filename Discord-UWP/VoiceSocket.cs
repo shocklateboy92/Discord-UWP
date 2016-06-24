@@ -28,16 +28,11 @@ namespace Discord_UWP
 {
     class VoiceSocket : AbstractSocket
     {
-        private const int SampleRate = 48000;
-        public const int NumChannels = 1;
-        public const int BitsPerSample = 16;
-
         public string Endpoint { get; set; }
         public string ServerId { get; set; }
         public string UserId { get; set; }
         public string SessionId { get; set; }
         public object Token { get; set; }
-        public short? LocalPort { get; private set; }
         public uint Ssrc { get; private set; }
 
         public VoiceSocket()
@@ -104,6 +99,7 @@ namespace Discord_UWP
                             },
                         }
                     });
+                await StartSendingVoice();
                 };
                 _dataSocket.PacketReceived += (o, args) =>
                 {
@@ -124,8 +120,6 @@ namespace Discord_UWP
                         delay = 0
                     }
                 });
-
-                //await _audioGraph_QuantumProcessed(null, null);
             }
         }
 
@@ -133,39 +127,10 @@ namespace Discord_UWP
         private async Task StartSendingVoice()
         {
             await Task.Delay(1000);
-            _dataManager.OutgoingDataReady += _audioGraph_QuantumProcessed;
-            _dataManager.StartOutgoingAudio();
+            _dataManager.OutgoingDataReady += _dataSocket.SendPacket;
+            _dataManager.StartOutgoingAudio(Ssrc);
         }
 
-        private async void _audioGraph_QuantumProcessed(object sender, VoiceDataManager.VoicePacket args)
-        {
-            try
-            {
-                //var voiceData = args.Data;
-                //if (voiceData == null)
-                //{
-                //    return;
-                //}
-
-                //_udpWriter.WriteByte(0x80);
-                //_udpWriter.WriteByte(0x78);
-
-                //_udpWriter.WriteUInt16(___sequence++);
-                //_udpWriter.WriteUInt32(___timestamp);
-                //_udpWriter.WriteUInt32((uint) Ssrc);
-                //_udpWriter.WriteBytes(voiceData);
-                //await _udpWriter.StoreAsync();
-
-                //___timestamp += (uint) args.FrameSize;
-            }
-            catch (Exception ex)
-            {
-                Log.LogExceptionCatch(ex);
-            }
-        }
-
-        private ushort ___sequence;
-        private uint ___timestamp;
         private VoiceDataManager _dataManager;
         private VoiceDataSocket _dataSocket;
     }

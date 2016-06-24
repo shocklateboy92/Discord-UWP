@@ -12,7 +12,7 @@ namespace Discord_UWP
     class VoiceDataManager
     {
         public static readonly uint BitsPerSample = 16;
-        public event EventHandler<VoicePacket> OutgoingDataReady;
+        public event EventHandler<VoiceDataSocket.VoicePacket> OutgoingDataReady;
 
         public async Task Initialize()
         {
@@ -37,7 +37,11 @@ namespace Discord_UWP
             _decoders[ssrc].ProcessPacket(data);
         }
 
-        public void StartOutgoingAudio() => _outgoingAudioGraph.Start();
+        public void StartOutgoingAudio(uint ssrc)
+        {
+            _encoder.Ssrc = ssrc;
+            _outgoingAudioGraph.Start();
+        }
 
         public void StopOutgoingAudio() => _outgoingAudioGraph.Stop();
 
@@ -125,16 +129,11 @@ namespace Discord_UWP
 
         private void OnOutgoingQuantumProcessed(AudioGraph sender, object args)
         {
-            VoicePacket packet = new VoicePacket();
-            packet.Data = _encoder.GetDataPacket(out packet.FrameSize);
-
-            OutgoingDataReady?.Invoke(this, packet);
-        }
-
-        public struct VoicePacket
-        {
-            public byte[] Data;
-            public int FrameSize;
+            var voicePacket = _encoder.GetVoicePacket();
+            if (voicePacket != null)
+            {
+                OutgoingDataReady?.Invoke(this, voicePacket);
+            }
         }
 
         private AudioGraph _incomingAudioGraph;

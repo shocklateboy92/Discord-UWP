@@ -15,13 +15,11 @@ namespace Discord_UWP
     {
         public const int SampleRate = VoiceDecoder.SampleRate;
         public const int NumChannels = 1;
-        public const int TargetFrameSize = 1920;
-        public const int MillisPerSec = 1000;
 
-        static readonly int[] SupportedFrameSizes = { 120, 240, 480, 960, 1920 };
+        static readonly uint[] SupportedFrameSizes = { 120, 240, 480, 960, 1920 };
 
         public AudioFrameOutputNode Node { get; private set; }
-        public static int DesiredProcessingInterval => TargetFrameSize * MillisPerSec / SampleRate;
+        public uint Ssrc { get; set; }
 
         public VoiceEncoder(AudioGraph graph)
         {
@@ -43,16 +41,16 @@ namespace Discord_UWP
             }
         }
 
-        public byte[] GetDataPacket(out int frameSize)
+        public VoiceDataSocket.VoicePacket GetVoicePacket()
         {
             lock (_encodeLock)
             {
-                frameSize = ReadDataFromFrame(Node.GetFrame());
+                var frameSize = ReadDataFromFrame(Node.GetFrame());
 
                 // We're abandoning extra data that won't fit nicely into a frame
                 if (!SupportedFrameSizes.Contains(frameSize))
                 {
-                    var bestFrameSize = 0;
+                    uint bestFrameSize = 0;
                     foreach (var size in SupportedFrameSizes)
                     {
                         if (size <= frameSize)
@@ -60,29 +58,39 @@ namespace Discord_UWP
                             bestFrameSize = size;
                         }
                     }
+
+                    if (bestFrameSize == 0)
+                    {
+                        return null;
+                    }
+
                     Log.Warning($"Got frame of unsupported size: {frameSize}. Trimming to {bestFrameSize}");
                     frameSize = bestFrameSize;
-                }
-
-                if (frameSize == 0)
-                {
-                    return null;
                 }
 
                 int encodedLen = _encoder.Encode(
                     _preEncodeBuffer,
                     0,
-                    frameSize,
+                    (int) frameSize,
                     _encodeBuffer,
                     0,
                     _encodeBuffer.Length
                 );
 
-                return _encodeBuffer.Take(encodedLen).ToArray();
+                _sequence++;
+                _timeStamp += frameSize;
+
+                return new VoiceDataSocket.VoicePacket
+                {
+                    Data = _encodeBuffer.Take(encodedLen).ToArray(),
+                    SequenceNumber = _sequence,
+                    TimeStamp = _timeStamp,
+                    Ssrc = Ssrc
+                };
             }
         }
 
-        private unsafe int ReadDataFromFrame(AudioFrame frame)
+        private unsafe uint ReadDataFromFrame(AudioFrame frame)
         {
             using (var buffer = frame.LockBuffer(AudioBufferAccessMode.Read))
             {
@@ -93,7 +101,7 @@ namespace Discord_UWP
                     ((IMemoryBufferByteAccess)reference).GetBuffer(out buf, out length);
 
                     float* typedbuf = (float*)buf;
-                    int samples = (int)(length / sizeof(float));
+                    uint samples = length / sizeof(float);
 
                     if (samples > _preEncodeBuffer.Length)
                     {
@@ -115,5 +123,7 @@ namespace Discord_UWP
         private byte[] _encodeBuffer = new byte[4096];
         private float[] _preEncodeBuffer = new float[SupportedFrameSizes.Last() * 2];
         private object _encodeLock = new object();
+        private ushort _sequence;
+        private uint _timeStamp;
     }
 }

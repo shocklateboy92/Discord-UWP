@@ -113,13 +113,34 @@ namespace Discord_UWP
             }
         }
 
+        public async void SendPacket(object sender, VoicePacket e)
+        {
+            try
+            {
+                _udpWriter.WriteByte(0x80);
+                _udpWriter.WriteByte(0x78);
+
+                _udpWriter.WriteUInt16(e.SequenceNumber);
+                _udpWriter.WriteUInt32(e.TimeStamp);
+                _udpWriter.WriteUInt32(e.Ssrc);
+
+                _udpWriter.WriteBytes(e.Data);
+
+                await _udpWriter.StoreAsync();
+            }
+            catch (Exception ex)
+            {
+                Log.LogExceptionCatch(ex);
+            }
+        }
+
         public struct ReadyEventArgs
         {
             public string Address { get; set; }
             public ushort Port { get; set; }
         }
 
-        public struct VoicePacket
+        public class VoicePacket
         {
             public byte[] Data { get; set; }
             public uint Ssrc { get; set; }
