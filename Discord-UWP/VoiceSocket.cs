@@ -31,8 +31,6 @@ namespace Discord_UWP
         private const int SampleRate = 48000;
         public const int NumChannels = 1;
         public const int BitsPerSample = 16;
-        private DatagramSocket _udpSocket;
-        private DataWriter _udpWriter;
 
         public string Endpoint { get; set; }
         public string ServerId { get; set; }
@@ -40,7 +38,7 @@ namespace Discord_UWP
         public string SessionId { get; set; }
         public object Token { get; set; }
         public short? LocalPort { get; private set; }
-        public int Ssrc { get; private set; }
+        public uint Ssrc { get; private set; }
 
         public VoiceSocket()
         {
@@ -79,21 +77,39 @@ namespace Discord_UWP
                 var eData = msg.GetValue("d").ToObject<VoiceReadyData>();
                 BeginHeartbeat(eData.HeartbeatInterval, 3);
 
-                _udpSocket = new DatagramSocket();
-                _udpSocket.MessageReceived += OnUdpMessageReceived;
-                _udpWriter = new DataWriter(_udpSocket.OutputStream);
-                //await _udpSocket.ConnectAsync(
-                //    new HostName(Endpoint),
-                //    eData.Port.ToString()
-                //);
-                await _udpSocket.ConnectAsync(new EndpointPair(new HostName("192.168.1.104"), "7771", new HostName(Endpoint), eData.Port.ToString()));
+                if (!eData.Modes.Contains("plain"))
+                {
+                    Log.Error("Server requires encryption. Currently not supported");
+                    return;
+                }
 
-
-                // Packet to ask the server to send back our (NAT/external) address
-                _udpWriter.WriteUInt32(eData.Ssrc);
-                _udpWriter.WriteBytes(new byte[70 - sizeof(uint)]);
-
-                await _udpWriter.StoreAsync();
+                Ssrc = eData.Ssrc;
+                _dataSocket = new VoiceDataSocket
+                {
+                    Ssrc = eData.Ssrc
+                };
+                _dataSocket.Ready += async (o, args) =>
+                {
+                    await SendMessage(new
+                    {
+                        op = 1,
+                        d = new
+                        {
+                            protocol = "udp",
+                            data = new
+                            {
+                                address = args.Address,
+                                port = 7771,
+                                mode = "plain"
+                            },
+                        }
+                    });
+                };
+                _dataSocket.PacketReceived += (o, args) =>
+                {
+                    _dataManager.ProcessIncomingData(args.Data, args.Ssrc);
+                };
+                await _dataSocket.Initialize(Endpoint, eData.Port);
             }
 
             // Session information
@@ -113,63 +129,6 @@ namespace Discord_UWP
             }
         }
 
-        private async void OnUdpMessageReceived(DatagramSocket sender, DatagramSocketMessageReceivedEventArgs args)
-        {
-            var reader = args.GetDataReader();
-            reader.UnicodeEncoding = Windows.Storage.Streams.UnicodeEncoding.Utf8;
-
-            if (LocalPort == null)
-            {
-                Ssrc = IPAddress.NetworkToHostOrder(reader.ReadInt32());
-                Log.WriteLine("Got UDP Packet with SSRC: " + Ssrc);
-                var remainingBytes = reader.ReadString(reader.UnconsumedBufferLength - 2);
-                var localAddress = string.Join("", remainingBytes.TakeWhile(c => c != '\u0000'));
-                Log.WriteLine("Localhost = " + localAddress);
-
-                LocalPort = IPAddress.NetworkToHostOrder((short)reader.ReadUInt16());
-                Log.WriteLine("LocalPort = " + LocalPort);
-
-                await SendMessage(new
-                {
-                    op = 1,
-                    d = new
-                    {
-                        protocol = "udp",
-                        data = new
-                        {
-                            address = localAddress,
-                            port = 7771,
-                            mode = "plain"
-                        },
-                    }
-                });
-
-                await StartSendingVoice();
-            }
-            else
-            {
-                var header = new byte[12];
-                reader.ReadBytes(header);
-                if (header[0] != 0x80) return; //flags
-                if (header[1] != 0x78) return; //payload type. you know, from before.
-
-                ushort sequenceNumber = (ushort)((header[2] << 8) | header[3] << 0);
-                uint timDocuestamp = (uint)((header[4] << 24) | header[5] << 16 | header[6] << 8 | header[7] << 0);
-                uint ssrc = (uint)((header[8] << 24) | (header[9] << 16) | (header[10] << 8) | (header[11] << 0));
-
-                int packetLength = (int)reader.UnconsumedBufferLength;
-                byte[] packet = new byte[packetLength];
-                reader.ReadBytes(packet);
-
-                if (packetLength < 12)
-                {
-                    return;
-                }
-
-                Log.WriteLine($"Decoding voice data: FromSsrc = {ssrc}, SequenceNumber = {sequenceNumber}, Timestamp = {timDocuestamp}, PacketSize = {packetLength}");
-                _dataManager.ProcessIncomingData(packet, ssrc);
-            }
-        }
 
         private async Task StartSendingVoice()
         {
@@ -182,22 +141,22 @@ namespace Discord_UWP
         {
             try
             {
-                var voiceData = args.Data;
-                if (voiceData == null)
-                {
-                    return;
-                }
+                //var voiceData = args.Data;
+                //if (voiceData == null)
+                //{
+                //    return;
+                //}
 
-                _udpWriter.WriteByte(0x80);
-                _udpWriter.WriteByte(0x78);
+                //_udpWriter.WriteByte(0x80);
+                //_udpWriter.WriteByte(0x78);
 
-                _udpWriter.WriteUInt16(___sequence++);
-                _udpWriter.WriteUInt32(___timestamp);
-                _udpWriter.WriteUInt32((uint) Ssrc);
-                _udpWriter.WriteBytes(voiceData);
-                await _udpWriter.StoreAsync();
+                //_udpWriter.WriteUInt16(___sequence++);
+                //_udpWriter.WriteUInt32(___timestamp);
+                //_udpWriter.WriteUInt32((uint) Ssrc);
+                //_udpWriter.WriteBytes(voiceData);
+                //await _udpWriter.StoreAsync();
 
-                ___timestamp += (uint) args.FrameSize;
+                //___timestamp += (uint) args.FrameSize;
             }
             catch (Exception ex)
             {
@@ -208,5 +167,6 @@ namespace Discord_UWP
         private ushort ___sequence;
         private uint ___timestamp;
         private VoiceDataManager _dataManager;
+        private VoiceDataSocket _dataSocket;
     }
 }
