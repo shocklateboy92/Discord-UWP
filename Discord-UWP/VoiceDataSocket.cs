@@ -27,7 +27,7 @@ namespace Discord_UWP
             _dataSocket.MessageReceived += OnUdpMessageReceived;
             _udpWriter = new DataWriter(_dataSocket.OutputStream);
 
-                await _dataSocket.ConnectAsync(new EndpointPair(new HostName("192.168.1.104"), "7771", new HostName(endpoint), port.ToString()));
+            await _dataSocket.ConnectAsync(new HostName(endpoint), port.ToString());
             //await _dataSocket.ConnectAsync(
             //    new EndpointPair(
             //        new HostName("192.168.1.104"),
