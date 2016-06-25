@@ -71,7 +71,13 @@ namespace Discord_UWP
                 var localAddress = string.Join("", remainingBytes.TakeWhile(c => c != '\u0000'));
                 Log.WriteLine("Localhost = " + localAddress);
 
-                var localPort = reader.ReadUInt16();
+                var portBytes = new byte[sizeof(ushort)];
+                reader.ReadBytes(portBytes);
+                if (!BitConverter.IsLittleEndian)
+                {
+                    Array.Reverse(portBytes);
+                }
+                var localPort = BitConverter.ToUInt16(portBytes, 0);
                 Log.WriteLine("LocalPort = " + localPort);
 
                 _ipDiscoveryCompleted = true;

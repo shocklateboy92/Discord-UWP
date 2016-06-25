@@ -94,7 +94,7 @@ namespace Discord_UWP
                             data = new
                             {
                                 address = args.Address,
-                                port = 7771,
+                                port = args.Port,
                                 mode = "plain"
                             },
                         }
