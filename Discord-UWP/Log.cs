@@ -30,7 +30,7 @@ namespace Discord_UWP
 
         internal static void Error(string v)
         {
-            throw new NotImplementedException();
+            WriteLine(">>> ERROR! : " + v);
         }
     }
 }

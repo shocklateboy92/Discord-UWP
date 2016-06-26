@@ -11,7 +11,7 @@ namespace Discord_UWP
 {
     class VoiceDataManager
     {
-        public static readonly uint BitsPerSample = 16;
+        public const uint BitsPerSample = 16;
         public event EventHandler<VoiceDataSocket.VoicePacket> OutgoingDataReady;
 
         public async Task Initialize()
@@ -20,18 +20,19 @@ namespace Discord_UWP
             await CreateInputDevice();
             await CreateOutputDevice();
 
-            _encoder = new VoiceEncoder(_outgoingAudioGraph);
+            _encoder = new VoiceEncoder(_audioGraph);
             _inputDevice.AddOutgoingConnection(_encoder.Node);
 
-            _incomingAudioGraph.Start();
+            _audioGraph.Start();
         }
 
         public void ProcessIncomingData(byte[] data, uint ssrc)
         {
             if (!_decoders.ContainsKey(ssrc))
             {
-                _decoders[ssrc] = new VoiceDecoder(_incomingAudioGraph, ssrc);
+                _decoders[ssrc] = new VoiceDecoder(_audioGraph, ssrc);
                 _decoders[ssrc].Node.AddOutgoingConnection(_outputDevice);
+                _decoders[ssrc].Node.Start();
             }
 
             _decoders[ssrc].ProcessPacket(data);
@@ -40,21 +41,27 @@ namespace Discord_UWP
         public void StartOutgoingAudio(uint ssrc)
         {
             _encoder.Ssrc = ssrc;
-            _outgoingAudioGraph.Start();
+            _encoder.Node.Start();
+            _audioGraph.QuantumProcessed += OnOutgoingQuantumProcessed;
         }
 
-        public void StopOutgoingAudio() => _outgoingAudioGraph.Stop();
+        public void StopOutgoingAudio()
+        {
+            _audioGraph.QuantumProcessed -= OnOutgoingQuantumProcessed;
+            _encoder.Node.Stop();
+        }
 
         private async Task CreateAudioGraphs()
         {
             var result = await AudioGraph.CreateAsync(
-                new AudioGraphSettings(AudioRenderCategory.Communications)
+                new AudioGraphSettings(AudioRenderCategory.GameChat)
                 {
                     EncodingProperties = AudioEncodingProperties.CreatePcm(
                         VoiceDecoder.SampleRate,
                         VoiceDecoder.NumChannels,
                         BitsPerSample
-                    )
+                    ),
+                    QuantumSizeSelectionMode = QuantumSizeSelectionMode.LowestLatency
                 }
             );
 
@@ -67,36 +74,13 @@ namespace Discord_UWP
                     )
                 );
             }
-            _incomingAudioGraph = result.Graph;
-
-            result = await AudioGraph.CreateAsync(
-                new AudioGraphSettings(AudioRenderCategory.Communications)
-                {
-                    EncodingProperties = AudioEncodingProperties.CreatePcm(
-                        VoiceEncoder.SampleRate,
-                        VoiceEncoder.NumChannels,
-                        BitsPerSample
-                    )
-                }
-            );
-
-            if (result.Status != AudioGraphCreationStatus.Success)
-            {
-                throw new VoiceException(
-                    string.Format(
-                        "Failed to create OutgoingAudio graph: {0}",
-                        result.Status
-                    )
-                );
-            }
-            _outgoingAudioGraph = result.Graph;
-            _outgoingAudioGraph.QuantumProcessed += OnOutgoingQuantumProcessed;
+            _audioGraph = result.Graph;
         }
 
         private async Task CreateInputDevice()
         {
-            var result = await _outgoingAudioGraph.CreateDeviceInputNodeAsync(
-                Windows.Media.Capture.MediaCategory.Communications
+            var result = await _audioGraph.CreateDeviceInputNodeAsync(
+                Windows.Media.Capture.MediaCategory.Other
             );
 
             if (result.Status != AudioDeviceNodeCreationStatus.Success)
@@ -113,7 +97,7 @@ namespace Discord_UWP
 
         private async Task CreateOutputDevice()
         {
-            var result = await _incomingAudioGraph.CreateDeviceOutputNodeAsync();
+            var result = await _audioGraph.CreateDeviceOutputNodeAsync();
 
             if (result.Status != AudioDeviceNodeCreationStatus.Success)
             {
@@ -136,8 +120,7 @@ namespace Discord_UWP
             }
         }
 
-        private AudioGraph _incomingAudioGraph;
-        private AudioGraph _outgoingAudioGraph;
+        private AudioGraph _audioGraph;
 
         private AudioDeviceInputNode _inputDevice;
         private AudioDeviceOutputNode _outputDevice;

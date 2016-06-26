@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.Media;
 using Windows.Media.Audio;
+using Windows.Media.MediaProperties;
 
 namespace Discord_UWP
 {
@@ -23,7 +24,13 @@ namespace Discord_UWP
 
         public VoiceEncoder(AudioGraph graph)
         {
-            Node = graph.CreateFrameOutputNode();
+            Node = graph.CreateFrameOutputNode(
+                AudioEncodingProperties.CreatePcm(
+                    SampleRate,
+                    NumChannels,
+                    VoiceDataManager.BitsPerSample
+                )
+            );
 
             BoxedValue<int> error = new BoxedValue<int>();
             _encoder = OpusEncoder.Create(
