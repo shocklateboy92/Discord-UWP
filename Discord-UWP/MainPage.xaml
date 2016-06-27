@@ -10,8 +10,20 @@
     mc:Ignorable="d">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Grid.Row="0">
+
+            <Button Click="OnJoinScrubClicked">Join Scrub</Button>
+            <Button Click="OnLeaveScrubClicked">Leave Scrub</Button>
+            <Button Click="OnStartVoiceClicked">Start Voice</Button>
+            <Button Click="OnStopVoiceClicked">Stop Voice</Button>
+        </StackPanel>
         <ListView 
             x:Name="_logListView"
+            Grid.Row="1"
             SelectionChanged="ListView_SelectionChanged"
             ItemsSource="{x:Bind LogMessages}">
             <ListView.ItemTemplate>

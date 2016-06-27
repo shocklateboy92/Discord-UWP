@@ -32,14 +32,9 @@ namespace Discord_UWP
         public string ServerId { get; set; }
         public string UserId { get; set; }
         public string SessionId { get; set; }
-        public object Token { get; set; }
-        public uint Ssrc { get; private set; }
+        public string Token { get; set; }
 
-        public VoiceSocket()
-        {
-            _dataManager = new VoiceDataManager();
-            Task.Run(_dataManager.Initialize);
-        }
+        public event EventHandler<VoiceReadyData> Ready;
 
         protected override Task<Uri> GetGatewayUrl()
         {
@@ -61,7 +56,7 @@ namespace Discord_UWP
             };
         }
 
-        protected async override void OnMessageReceived(JObject msg)
+        protected override void OnMessageReceived(JObject msg)
         {
             Log.WriteLine("voice recv: " + msg.ToString());
             int op = msg.Value<int>("op");
@@ -78,60 +73,13 @@ namespace Discord_UWP
                     return;
                 }
 
-                Ssrc = eData.Ssrc;
-                _dataSocket = new VoiceDataSocket
-                {
-                    Ssrc = eData.Ssrc
-                };
-                _dataSocket.Ready += async (o, args) =>
-                {
-                    await SendMessage(new
-                    {
-                        op = 1,
-                        d = new
-                        {
-                            protocol = "udp",
-                            data = new
-                            {
-                                address = args.Address,
-                                port = args.Port,
-                                mode = "plain"
-                            },
-                        }
-                    });
-                await StartSendingVoice();
-                };
-                _dataSocket.PacketReceived += (o, args) =>
-                {
-                    _dataManager.ProcessIncomingData(args.Data, args.Ssrc);
-                };
-                await _dataSocket.Initialize(Endpoint, eData.Port);
+                Ready?.Invoke(this, eData);
             }
 
             // Session information
             else if (op == 4)
             {
-                await SendMessage(new
-                {
-                    op = 5,
-                    d = new
-                    {
-                        speaking = true,
-                        delay = 0
-                    }
-                });
             }
         }
-
-
-        private async Task StartSendingVoice()
-        {
-            await Task.Delay(1000);
-            _dataManager.OutgoingDataReady += _dataSocket.SendPacket;
-            _dataManager.StartOutgoingAudio(Ssrc);
-        }
-
-        private VoiceDataManager _dataManager;
-        private VoiceDataSocket _dataSocket;
     }
 }

@@ -52,5 +52,13 @@ namespace Discord_UWP
                 textBlock.TextWrapping = wrapMode;
             }
         }
+
+        private void OnJoinScrubClicked(object sender, RoutedEventArgs e) => App.Client.JoinChannel();
+
+        private void OnLeaveScrubClicked(object sender, RoutedEventArgs e) => App.Client.LeaveChannel();
+
+        private void OnStartVoiceClicked(object sender, RoutedEventArgs e) => App.Client.StartSendingVoice();
+
+        private void OnStopVoiceClicked(object sender, RoutedEventArgs e) => App.Client.StopSendingVoice();
     }
 }

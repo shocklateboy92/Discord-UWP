@@ -10,7 +10,7 @@ using Windows.Storage.Streams;
 
 namespace Discord_UWP
 {
-    class VoiceDataSocket
+    class VoiceDataSocket : IDisposable
     {
         private DatagramSocket _dataSocket;
         private DataWriter _udpWriter;
@@ -138,6 +138,13 @@ namespace Discord_UWP
             {
                 Log.LogExceptionCatch(ex);
             }
+        }
+
+        public void Dispose()
+        {
+            _dataSocket.Dispose();
+            Ready = null;
+            PacketReceived = null;
         }
 
         public struct ReadyEventArgs

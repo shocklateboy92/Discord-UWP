@@ -14,9 +14,6 @@ namespace Discord_UWP
 {
     public abstract class AbstractSocket
     {
-
-        private Uri _endpointAddress;
-
         private MessageWebSocket _gatewaySocket;
         private DataWriter _gatewayWriter;
 
@@ -46,10 +43,6 @@ namespace Discord_UWP
         private void OnSocketClosed(IWebSocket sender, WebSocketClosedEventArgs args)
         {
             Log.WriteLine($"Socket closed with code '{args.Code}' for reason: {args.Reason}");
-
-            // Currenly we don't have any logic anywhere in the App to re-open
-            // the socket once it's closed. So we may as well exit if this happens.
-            App.Current.Exit();
         }
 
         protected void BeginHeartbeat(int interval, int opCode)
@@ -100,6 +93,7 @@ namespace Discord_UWP
         public void CloseSocket()
         {
             _gatewaySocket.Dispose();
+            _heartbeatTimer.Dispose();
         }
 
         /// <summary>

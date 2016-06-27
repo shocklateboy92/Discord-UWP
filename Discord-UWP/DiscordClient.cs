@@ -18,9 +18,14 @@ namespace Discord_UWP
         public static readonly string EndpointBase = "https://discordapp.com/api";
 
         private GatewaySocket _gateway;
-        private VoiceSocket _voice;
+        private VoiceSocket _voiceSocket;
+        private VoiceDataSocket _dataSocket;
+        private VoiceDataManager _dataManager;
 
-        public string UserId { get; private set; }
+        public User Self { get; private set; }
+        public Guild TargetGuild { get; private set; }
+        public Channel TargetChannel { get; private set; }
+        public uint SelfSsrc { get; private set; }
 
         public DiscordClient()
         {
@@ -37,7 +42,7 @@ namespace Discord_UWP
 
         private async void OnInitialStateReceived(D initialState)
         {
-            UserId = initialState.User.Id;
+            Self = initialState.User;
             foreach (var guild in initialState.Guilds)
             {
                 var voiceChannels = guild.Channels.Where(c => string.Compare(c.Type, "voice", ignoreCase: true) == 0).Select(c => $"'{c.Name}' ({c.Id})");
@@ -47,62 +52,153 @@ namespace Discord_UWP
 
                 if (hotChannel != null)
                 {
-                    await _gateway.SendMessage(new
-                    {
-                        op = 4,
-                        d = new VoiceStateUpdate
-                        {
-                            GuildId = guild.Id,
-                            ChannelId = hotChannel.Id,
-                            SelfDeaf = false,
-                            SelfMute = false
-                        }
-                    });
+                    TargetChannel = hotChannel;
+                    TargetGuild = guild;
                 }
             }
+        }
+
+        internal async void StopSendingVoice()
+        {
+            await _voiceSocket.SendMessage(new
+            {
+                op = 5,
+                d = new
+                {
+                    speaking = false,
+                    delay = 0
+                }
+            });
+            _dataManager.StopOutgoingAudio();
+        }
+
+        internal async void StartSendingVoice()
+        {
+            await _voiceSocket.SendMessage(new
+            {
+                op = 5,
+                d = new
+                {
+                    speaking = true,
+                    delay = 0
+                }
+            });
+            _dataManager.StartOutgoingAudio(SelfSsrc);
+        }
+
+        internal async void LeaveChannel()
+        {
+            await _gateway.SendMessage(new
+            {
+                op = 4,
+                d = new VoiceStateUpdate
+                {
+                    GuildId = TargetGuild.Id,
+                    ChannelId = null,
+                    SelfDeaf = false,
+                    SelfMute = false
+                }
+            });
+            _voiceSocket.CloseSocket();
+            _dataManager.Dispose();
+            _dataSocket.Dispose();
+            _voiceSocket = null;
+            _dataManager = null;
+            _dataSocket = null;
+        }
+
+        internal async void JoinChannel()
+        {
+            await _gateway.SendMessage(new
+            {
+                op = 4,
+                d = new VoiceStateUpdate
+                {
+                    GuildId = TargetGuild.Id,
+                    ChannelId = TargetChannel.Id,
+                    SelfDeaf = false,
+                    SelfMute = false
+                }
+            });
         }
 
         private void OnVoiceStateUpdate(VoiceStateUpdate voiceState)
         {
             bool doConnect = false;
-            if (_voice != null)
+            if (_voiceSocket != null)
             {
                 // Other event has already happened
                 doConnect = true;
             }
             else
             {
-                _voice = new VoiceSocket();
+                _voiceSocket = new VoiceSocket();
+                _voiceSocket.Ready += OnVoiceSocketReady;
             }
-            _voice.UserId = voiceState.UserId;
-            _voice.SessionId = voiceState.SessionId;
-            _voice.ServerId = voiceState.GuildId;
+            _voiceSocket.UserId = voiceState.UserId;
+            _voiceSocket.SessionId = voiceState.SessionId;
+            _voiceSocket.ServerId = voiceState.GuildId;
 
             if (doConnect)
             {
-                Task.Run(_voice.BeginConnection);
+                Task.Run(_voiceSocket.BeginConnection);
             }
         }
 
         private void OnVoiceServerUpdate(VoiceServerUpdate voiceServer)
         {
             bool doConnect = false;
-            if (_voice != null)
+            if (_voiceSocket != null)
             {
                 doConnect = true;
             }
             else
             {
-                _voice = new VoiceSocket();
+                _voiceSocket = new VoiceSocket();
+                _voiceSocket.Ready += OnVoiceSocketReady;
             }
             // ditch the useless port attached to the hostname
-            _voice.Endpoint = voiceServer.Endpoint.Remove(voiceServer.Endpoint.Length - 3);
-            _voice.Token = voiceServer.Token;
+            _voiceSocket.Endpoint = voiceServer.Endpoint.Replace(":80", "");
+            _voiceSocket.Token = voiceServer.Token;
 
             if (doConnect)
             {
-                Task.Run(_voice.BeginConnection);
+                Task.Run(_voiceSocket.BeginConnection);
             }
+        }
+
+        private async void OnVoiceSocketReady(object sender, VoiceReadyData e)
+        {
+            SelfSsrc = e.Ssrc;
+            _dataSocket = new VoiceDataSocket
+            {
+                Ssrc = e.Ssrc
+            };
+            if (_dataManager == null)
+            {
+                _dataManager = new VoiceDataManager();
+                _dataManager.OutgoingDataReady += _dataSocket.SendPacket;
+                await _dataManager.Initialize();
+            }
+            _dataSocket.Ready += async (o, args) =>
+            {
+                await _voiceSocket.SendMessage(new
+                {
+                    op = 1,
+                    d = new
+                    {
+                        protocol = "udp",
+                        data = new
+                        {
+                            address = args.Address,
+                            port = args.Port,
+                            mode = "plain"
+                        },
+                    }
+                });
+            };
+            _dataSocket.PacketReceived += _dataManager.ProcessIncomingData;
+            await _dataSocket.Initialize(_voiceSocket.Endpoint, e.Port);
         }
 
         public async Task UpdateGateway()
@@ -114,7 +210,7 @@ namespace Discord_UWP
         {
             Debug.WriteLine("Closing socket...");
             _gateway.CloseSocket();
-            _voice?.CloseSocket();
+            _voiceSocket?.CloseSocket();
         }
     }
 }

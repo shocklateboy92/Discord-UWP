@@ -9,7 +9,7 @@ using Windows.Media.Render;
 
 namespace Discord_UWP
 {
-    class VoiceDataManager
+    class VoiceDataManager : IDisposable
     {
         public const uint BitsPerSample = 16;
         public event EventHandler<VoiceDataSocket.VoicePacket> OutgoingDataReady;
@@ -26,16 +26,18 @@ namespace Discord_UWP
             _audioGraph.Start();
         }
 
-        public void ProcessIncomingData(byte[] data, uint ssrc)
+        public void ProcessIncomingData(object sender, VoiceDataSocket.VoicePacket packet)
         {
-            if (!_decoders.ContainsKey(ssrc))
+            if (!_decoders.ContainsKey(packet.Ssrc))
             {
-                _decoders[ssrc] = new VoiceDecoder(_audioGraph, ssrc);
-                _decoders[ssrc].Node.AddOutgoingConnection(_outputDevice);
-                _decoders[ssrc].Node.Start();
+                var decoder = new VoiceDecoder(_audioGraph, packet.Ssrc);
+                decoder.Node.AddOutgoingConnection(_outputDevice);
+                decoder.Node.Start();
+
+                _decoders[packet.Ssrc] = decoder;
             }
 
-            _decoders[ssrc].ProcessPacket(data);
+            _decoders[packet.Ssrc].ProcessPacket(packet.Data);
         }
 
         public void StartOutgoingAudio(uint ssrc)
@@ -118,6 +120,13 @@ namespace Discord_UWP
             {
                 OutgoingDataReady?.Invoke(this, voicePacket);
             }
+        }
+
+        public void Dispose()
+        {
+            StopOutgoingAudio();
+            _audioGraph.Dispose();
+            OutgoingDataReady = null;
         }
 
         private AudioGraph _audioGraph;
