@@ -40,7 +40,7 @@ namespace Discord_UWP
             _gateway.InitialStateReceived += OnInitialStateReceived;
         }
 
-        private async void OnInitialStateReceived(D initialState)
+        private void OnInitialStateReceived(D initialState)
         {
             Self = initialState.User;
             foreach (var guild in initialState.Guilds)

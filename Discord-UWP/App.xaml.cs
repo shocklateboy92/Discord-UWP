@@ -107,6 +107,7 @@ namespace Discord_UWP
         {
             var deferral = e.SuspendingOperation.GetDeferral();
 
+            Client.LeaveChannel();
             Client.CloseSockets();
 
             //TODO: Save application state and stop any background activity
