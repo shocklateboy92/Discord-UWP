@@ -2,10 +2,7 @@
 using Concentus.Enums;
 using Concentus.Structs;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Windows.Media;
 using Windows.Media.Audio;
 using Windows.Media.MediaProperties;
@@ -21,6 +18,7 @@ namespace Discord_UWP
 
         public AudioFrameOutputNode Node { get; private set; }
         public uint Ssrc { get; set; }
+        public double RequiredEnergy { get; set; } = 0.1;
 
         public VoiceEncoder(AudioGraph graph)
         {
@@ -55,6 +53,10 @@ namespace Discord_UWP
                 var frameSize = ReadDataFromFrame(Node.GetFrame());
 
                 var e = Math.Sqrt(_preEncodeBuffer.Take((int)frameSize).Select(x => ((double)x) * x).Sum() / frameSize);
+                if (e < RequiredEnergy)
+                {
+                    return null;
+                }
 
                 // We're abandoning extra data that won't fit nicely into a frame
                 if (!SupportedFrameSizes.Contains(frameSize))
