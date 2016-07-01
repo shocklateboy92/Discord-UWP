@@ -159,6 +159,7 @@ namespace Discord_UWP
             public uint Ssrc { get; set; }
             public ushort SequenceNumber { get; set; }
             public uint TimeStamp { get; set; }
+            public double Energy { get; internal set; }
         }
     }
 }

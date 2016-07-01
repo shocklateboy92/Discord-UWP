@@ -54,6 +54,8 @@ namespace Discord_UWP
             {
                 var frameSize = ReadDataFromFrame(Node.GetFrame());
 
+                var e = Math.Sqrt(_preEncodeBuffer.Take((int)frameSize).Select(x => ((double)x) * x).Sum() / frameSize);
+
                 // We're abandoning extra data that won't fit nicely into a frame
                 if (!SupportedFrameSizes.Contains(frameSize))
                 {
@@ -92,7 +94,8 @@ namespace Discord_UWP
                     Data = _encodeBuffer.Take(encodedLen).ToArray(),
                     SequenceNumber = _sequence,
                     TimeStamp = _timeStamp,
-                    Ssrc = Ssrc
+                    Ssrc = Ssrc,
+                    Energy = e
                 };
             }
         }
