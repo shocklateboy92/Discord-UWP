@@ -16,18 +16,27 @@ namespace Discord_UWP
 
         public async Task Initialize()
         {
-            await CreateAudioGraphs();
-            await CreateInputDevice();
-            await CreateOutputDevice();
+            try
+            {
+                await CreateAudioGraphs();
+                await CreateInputDevice();
+                await CreateOutputDevice();
 
-            _encoder = new VoiceEncoder(_audioGraph);
-            _inputDevice.AddOutgoingConnection(_encoder.Node);
+                _encoder = new VoiceEncoder(_audioGraph);
+                _inputDevice.AddOutgoingConnection(_encoder.Node);
 
-            _audioGraph.Start();
+                _audioGraph.Start();
+            }
+            catch (Exception ex)
+            {
+                Log.LogExceptionCatch(ex);
+            }
         }
 
         public void ProcessIncomingData(object sender, VoiceDataSocket.VoicePacket packet)
         {
+            if (_audioGraph == null) return;
+
             if (!_decoders.ContainsKey(packet.Ssrc))
             {
                 var decoder = new VoiceDecoder(_audioGraph, packet.Ssrc);
@@ -42,6 +51,8 @@ namespace Discord_UWP
 
         public void StartOutgoingAudio(uint ssrc)
         {
+            if (_audioGraph == null) return;
+
             _encoder.Ssrc = ssrc;
             _encoder.Node.Start();
             _audioGraph.QuantumProcessed += OnOutgoingQuantumProcessed;
@@ -49,6 +60,8 @@ namespace Discord_UWP
 
         public void StopOutgoingAudio()
         {
+            if (_audioGraph == null) return;
+
             _audioGraph.QuantumProcessed -= OnOutgoingQuantumProcessed;
             _encoder.Node.Stop();
         }
@@ -124,6 +137,8 @@ namespace Discord_UWP
 
         public void Dispose()
         {
+            if (_audioGraph == null) return;
+
             StopOutgoingAudio();
             _audioGraph.Dispose();
             OutgoingDataReady = null;
@@ -137,5 +152,15 @@ namespace Discord_UWP
         private IDictionary<uint, VoiceDecoder> 
             _decoders = new Dictionary<uint, VoiceDecoder>();
         private VoiceEncoder _encoder;
+
+        public VoiceDecoder DecoderForSsrc(uint ssrc)
+        {
+            if (_decoders.ContainsKey(ssrc))
+            {
+                return _decoders[ssrc];
+            }
+
+            return null;
+        }
     }
 }

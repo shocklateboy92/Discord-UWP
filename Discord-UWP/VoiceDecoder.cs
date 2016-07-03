@@ -13,7 +13,7 @@ using Windows.Media;
 
 namespace Discord_UWP
 {
-    class VoiceDecoder
+    public class VoiceDecoder
     {
         public const int SampleRate = 48000;
         public const int NumChannels = 2;

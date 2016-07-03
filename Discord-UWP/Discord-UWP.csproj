@@ -121,6 +121,10 @@
     <Compile Include="VoiceDecoder.cs" />
     <Compile Include="VoiceEncoder.cs" />
     <Compile Include="VoiceException.cs" />
+    <Compile Include="VoiceGraphInfo.cs" />
+    <Compile Include="VoiceGraphPage.xaml.cs">
+      <DependentUpon>VoiceGraphPage.xaml</DependentUpon>
+    </Compile>
     <Compile Include="VoiceSocket.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -147,6 +151,10 @@
     <Page Include="MainPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
+    </Page>
+    <Page Include="VoiceGraphPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>

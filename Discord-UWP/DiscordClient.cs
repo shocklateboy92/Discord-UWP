@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
@@ -211,6 +212,36 @@ namespace Discord_UWP
             Debug.WriteLine("Closing socket...");
             _gateway.CloseSocket();
             _voiceSocket?.CloseSocket();
+        }
+
+        public class VoiceGraphViewModel
+        {
+            public ObservableCollection<VoiceGraphInfo> AudioSources { get; set; }
+                = new ObservableCollection<VoiceGraphInfo>();
+
+            VoiceGraphViewModel()
+            {
+                App.Client._dataSocket.PacketReceived += OnDataReceived;
+            }
+
+            private void OnDataReceived(object sender, VoiceDataSocket.VoicePacket e)
+            {
+                if (!_sourcesMap.ContainsKey(e.Ssrc))
+                {
+                    var decoder = App.Client._dataManager.DecoderForSsrc(e.Ssrc);
+                    if (decoder != null)
+                    {
+                        var info = new VoiceGraphInfo(e.Ssrc, decoder);
+                        _sourcesMap.Add(e.Ssrc, info);
+                        AudioSources.Add(info);
+                    }
+                }
+
+                _sourcesMap[e.Ssrc].OnDataReceived();
+            }
+
+            private IDictionary<uint, VoiceGraphInfo> _sourcesMap 
+                = new Dictionary<uint, VoiceGraphInfo>();
         }
     }
 }
