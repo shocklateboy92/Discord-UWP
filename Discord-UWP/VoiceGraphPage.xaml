@@ -13,12 +13,51 @@
             <RowDefinition />
         </Grid.RowDefinitions>
         <ListView
+            x:Name="_itemsListView"
+            ItemsSource="{x:Bind ViewModel.AudioSources}"
+            SelectionMode="None"
             Grid.Row="1">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:VoiceGraphInfo">
-                    <TextBlock>I have a thing!</TextBlock>
+                    <Grid x:Name="_delegatePanel">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.Resources>
+                            <Storyboard x:Name="Storyboard">
+                                <ColorAnimation
+                                    Storyboard.TargetName="_delegateBackground"
+                                    Storyboard.TargetProperty="Color"
+                                    From="{ThemeResource SystemColorHighlightColor}"
+                                    Duration="0:0:1"/>
+                            </Storyboard>
+                        </Grid.Resources>
+                        <Grid.Background>
+                            <SolidColorBrush 
+                                x:Name="_delegateBackground"
+                                Color="{ThemeResource SystemColorWindowColor}" />
+                        </Grid.Background>
+                        <TextBlock Grid.Column="0" VerticalAlignment="Center">SSRC: </TextBlock>
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{x:Bind Ssrc}" />
+                        <Slider 
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            Value="{x:Bind Gain, Mode=TwoWay}"
+                            Minimum="0"
+                            Maximum="3"
+                            SnapsTo="StepValues"
+                            StepFrequency="0.05"/>
+                    </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    <Setter Property="MinHeight" Value="0"/>
+                </Style>
+            </ListView.ItemContainerStyle>
         </ListView>
     </Grid>
 </Page>

@@ -20,6 +20,7 @@
             <Button Click="OnLeaveScrubClicked">Leave Scrub</Button>
             <Button Click="OnStartVoiceClicked">Start Voice</Button>
             <Button Click="OnStopVoiceClicked">Stop Voice</Button>
+            <Button Click="VoiceInfoClicked">Voice Sources</Button>
         </StackPanel>
         <ListView 
             x:Name="_logListView"

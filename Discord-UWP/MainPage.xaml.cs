@@ -60,5 +60,11 @@ namespace Discord_UWP
         private void OnStartVoiceClicked(object sender, RoutedEventArgs e) => App.Client.StartSendingVoice();
 
         private void OnStopVoiceClicked(object sender, RoutedEventArgs e) => App.Client.StopSendingVoice();
+
+        private void VoiceInfoClicked(object sender, RoutedEventArgs e)
+        {
+            var rootFrame = Window.Current.Content as Frame;
+            rootFrame?.Navigate(typeof(VoiceGraphPage));
+        }
     }
 }

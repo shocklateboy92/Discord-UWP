@@ -27,7 +27,7 @@ namespace Discord_UWP
                 AudioEncodingProperties.CreatePcm(
                     SampleRate,
                     NumChannels,
-                    BitHelpers.BitsIn(sizeof(short))
+                    Helpers.BitsIn(sizeof(short))
                 )
             );
 

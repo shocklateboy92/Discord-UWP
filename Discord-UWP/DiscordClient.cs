@@ -8,6 +8,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.Core;
 using Windows.Data.Json;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
@@ -219,9 +220,10 @@ namespace Discord_UWP
             public ObservableCollection<VoiceGraphInfo> AudioSources { get; set; }
                 = new ObservableCollection<VoiceGraphInfo>();
 
-            VoiceGraphViewModel()
+            public VoiceGraphViewModel()
             {
-                App.Client._dataSocket.PacketReceived += OnDataReceived;
+                App.Client._dataSocket.PacketReceived += 
+                    Helpers.HandlerInUiThread<VoiceDataSocket.VoicePacket>(OnDataReceived);
             }
 
             private void OnDataReceived(object sender, VoiceDataSocket.VoicePacket e)

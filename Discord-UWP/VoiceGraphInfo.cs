@@ -12,7 +12,17 @@ namespace Discord_UWP
 
         public uint Ssrc { get; private set; }
 
-        public double Gain => _decoder.Node.OutgoingGain;
+        public double Gain
+        {
+            get
+            {
+                return _decoder.Node.OutgoingGain;
+            }
+            set
+            {
+                _decoder.Node.OutgoingGain = value;
+            }
+        }
 
         private VoiceDecoder _decoder;
 
