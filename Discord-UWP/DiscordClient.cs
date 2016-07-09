@@ -28,6 +28,7 @@ namespace Discord_UWP
         public Guild TargetGuild { get; private set; }
         public Channel TargetChannel { get; private set; }
         public uint SelfSsrc { get; private set; }
+        public event EventHandler<VoiceGraphViewModel> ChannelChanged;
 
         public DiscordClient()
         {
@@ -198,6 +199,8 @@ namespace Discord_UWP
                         },
                     }
                 });
+
+                ChannelChanged?.Invoke(this, new VoiceGraphViewModel());
             };
             _dataSocket.PacketReceived += _dataManager.ProcessIncomingData;
             await _dataSocket.Initialize(_voiceSocket.Endpoint, e.Port);
@@ -220,6 +223,8 @@ namespace Discord_UWP
             public ObservableCollection<VoiceGraphInfo> AudioSources { get; set; }
                 = new ObservableCollection<VoiceGraphInfo>();
 
+            public event EventHandler<VoiceGraphInfo> RehighlightItem;
+
             public VoiceGraphViewModel()
             {
                 App.Client._dataSocket.PacketReceived += 
@@ -239,7 +244,7 @@ namespace Discord_UWP
                     }
                 }
 
-                _sourcesMap[e.Ssrc].OnDataReceived();
+                RehighlightItem?.Invoke(this, _sourcesMap[e.Ssrc]);
             }
 
             private IDictionary<uint, VoiceGraphInfo> _sourcesMap 

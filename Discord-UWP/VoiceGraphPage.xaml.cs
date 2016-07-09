@@ -13,36 +13,33 @@ namespace Discord_UWP
 {
     public sealed partial class VoiceGraphPage : Page
     {
-        public DiscordClient.VoiceGraphViewModel ViewModel { get; } 
-            = new DiscordClient.VoiceGraphViewModel();
+        public DiscordClient.VoiceGraphViewModel ViewModel { get; private set; } 
 
         public VoiceGraphPage()
         {
             this.InitializeComponent();
-            ViewModel.AudioSources.CollectionChanged += AudioSources_CollectionChanged;
-            AudioSources_CollectionChanged(null, null);
+            App.Client.ChannelChanged += 
+                Helpers.HandlerInUiThread<DiscordClient.VoiceGraphViewModel>(OnViewModelChanged);
         }
 
-        private void AudioSources_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        public void OnViewModelChanged(object sender, DiscordClient.VoiceGraphViewModel viewModel)
         {
-            var items = ViewModel.AudioSources as IEnumerable<VoiceGraphInfo>;
-            if (e != null)
+            if (ViewModel != null)
             {
-                Debug.Assert(e.Action == NotifyCollectionChangedAction.Add);
-                items = e.NewItems.Cast<VoiceGraphInfo>();
+                ViewModel.RehighlightItem -= OnHighlightRequested;
             }
 
-            Debug.Assert(items != null, "Audio source list update error");
-
-            foreach (var item in items)
+            ViewModel = viewModel;
+            if (ViewModel != null)
             {
-                item.Rehighlight += Item_Rehighlight;
+                _itemsListView.ItemsSource = ViewModel.AudioSources;
+                ViewModel.RehighlightItem += OnHighlightRequested;
             }
         }
 
-        private void Item_Rehighlight(object sender, object e)
+        private void OnHighlightRequested(object sender, VoiceGraphInfo e)
         {
-            var container = _itemsListView.ContainerFromItem(sender) as ListViewItem;
+            var container = _itemsListView.ContainerFromItem(e) as ListViewItem;
             if (container == null)
             {
                 // Maybe this thing hasn't been added to the ListView fully yet

@@ -14,7 +14,6 @@
         </Grid.RowDefinitions>
         <ListView
             x:Name="_itemsListView"
-            ItemsSource="{x:Bind ViewModel.AudioSources}"
             SelectionMode="None"
             Grid.Row="1">
             <ListView.ItemTemplate>

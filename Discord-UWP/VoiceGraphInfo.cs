@@ -8,8 +8,6 @@ namespace Discord_UWP
 {
     public class VoiceGraphInfo
     {
-        public event EventHandler<object> Rehighlight;
-
         public uint Ssrc { get; private set; }
 
         public double Gain
@@ -31,7 +29,5 @@ namespace Discord_UWP
             Ssrc = ssrc;
             _decoder = decoder;
         }
-
-        public void OnDataReceived() => Rehighlight?.Invoke(this, null);
     }
 }
