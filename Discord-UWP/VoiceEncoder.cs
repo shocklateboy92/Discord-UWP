@@ -30,20 +30,11 @@ namespace Discord_UWP
                 )
             );
 
-            BoxedValue<int> error = new BoxedValue<int>();
             _encoder = OpusEncoder.Create(
                 SampleRate,
                 NumChannels,
-                OpusApplication.OPUS_APPLICATION_AUDIO,
-                error);
-
-            if (error.Val != OpusError.OPUS_OK)
-            {
-                Log.WriteLine(string.Format(
-                    "Unable to create opus encoder: 0x{1}",
-                    error.Val.ToString("X8")
-                ));
-            }
+                OpusApplication.OPUS_APPLICATION_AUDIO
+            );
         }
 
         public VoiceDataSocket.VoicePacket GetVoicePacket()

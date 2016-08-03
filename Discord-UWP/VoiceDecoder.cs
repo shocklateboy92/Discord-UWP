@@ -31,21 +31,10 @@ namespace Discord_UWP
                 )
             );
 
-            BoxedValue<int> error = new BoxedValue<int>();
             _decoder = OpusDecoder.Create(
                 SampleRate,
-                NumChannels,
-                error
+                NumChannels
             );
-
-            if (error.Val != OpusError.OPUS_OK)
-            {
-                Log.WriteLine(string.Format(
-                    "Unable to create opus decoder for SSRC {0}: 0x{1}",
-                    ssrc,
-                    error.Val.ToString("X8")
-                ));
-            }
         }
 
         public void ProcessPacket(byte[] packet)
