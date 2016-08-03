@@ -25,11 +25,17 @@
                 Value="{x:Bind ViewModel.OutgoingGain, Mode=TwoWay}" />
             <ProgressBar
                 x:Name="_outgoingProgressBar"
+                Maximum="3.0"
+                Value="{x:Bind ViewModel.LastEnergy, Mode=OneWay}"
                 IsIndeterminate="False" />
             <TextBlock>
                 Outgoing Voice Cut off
             </TextBlock>
-            <Slider x:Name="_outgoingCutOffSlider" />
+            <Slider 
+                x:Name="_outgoingCutOffSlider"
+                StepFrequency="0.05"
+                Maximum="3.0"
+                Value="{x:Bind ViewModel.RequiredEnergy, Mode=TwoWay}"/>
         </StackPanel>
         <TextBlock
             Visibility="{x:Bind ViewModel, Converter={StaticResource InverseVisbilityConverter}, Mode=OneWay}" >

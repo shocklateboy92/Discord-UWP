@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
@@ -222,12 +223,13 @@ namespace Discord_UWP
             _voiceSocket?.CloseSocket();
         }
 
-        public class VoiceGraphViewModel
+        public class VoiceGraphViewModel : INotifyPropertyChanged
         {
             public ObservableCollection<VoiceGraphInfo> AudioSources { get; set; }
                 = new ObservableCollection<VoiceGraphInfo>();
 
             public event EventHandler<VoiceGraphInfo> RehighlightItem;
+            public event PropertyChangedEventHandler PropertyChanged;
 
             public double OutgoingGain
             {
@@ -241,11 +243,33 @@ namespace Discord_UWP
                 }
             }
 
+            public double RequiredEnergy
+            {
+                get
+                {
+                    return _dataManager.RequiredEnergy;
+                }
+                set
+                {
+                    _dataManager.RequiredEnergy = value;
+                }
+            }
+
+            public double LastEnergy { get; private set; }
+
             internal VoiceGraphViewModel(VoiceDataManager dataManager, VoiceDataSocket dataSocket)
             {
                 dataSocket.PacketReceived += 
                     Helpers.HandlerInUiThread<VoiceDataSocket.VoicePacket>(OnDataReceived);
                 _dataManager = dataManager;
+                _dataManager.OutgoingDataReady += 
+                    Helpers.HandlerInUiThread<VoiceDataSocket.VoicePacket>(OnOutgoingData);
+            }
+
+            private void OnOutgoingData(object sender, VoiceDataSocket.VoicePacket e)
+            {
+                LastEnergy = e.Energy;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastEnergy)));
             }
 
             private void OnDataReceived(object sender, VoiceDataSocket.VoicePacket e)

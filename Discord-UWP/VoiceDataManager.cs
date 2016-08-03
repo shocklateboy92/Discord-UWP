@@ -66,6 +66,40 @@ namespace Discord_UWP
             _encoder.Node.Stop();
         }
 
+        public double OutgoingGain
+        {
+            get
+            {
+                return _inputDevice.OutgoingGain;
+            }
+            set
+            {
+                _inputDevice.OutgoingGain = value;
+            }
+        }
+
+        public double RequiredEnergy
+        {
+            get
+            {
+                return _encoder.RequiredEnergy;
+            }
+            set
+            {
+                _encoder.RequiredEnergy = value;
+            }
+        }
+
+        public VoiceDecoder DecoderForSsrc(uint ssrc)
+        {
+            if (_decoders.ContainsKey(ssrc))
+            {
+                return _decoders[ssrc];
+            }
+
+            return null;
+        }
+
         private async Task CreateAudioGraphs()
         {
             var result = await AudioGraph.CreateAsync(
@@ -152,27 +186,5 @@ namespace Discord_UWP
         private IDictionary<uint, VoiceDecoder> 
             _decoders = new Dictionary<uint, VoiceDecoder>();
         private VoiceEncoder _encoder;
-
-        public double OutgoingGain
-        {
-            get
-            {
-                return _inputDevice.OutgoingGain;
-            }
-            set
-            {
-                _inputDevice.OutgoingGain = value;
-            }
-        }
-
-        public VoiceDecoder DecoderForSsrc(uint ssrc)
-        {
-            if (_decoders.ContainsKey(ssrc))
-            {
-                return _decoders[ssrc];
-            }
-
-            return null;
-        }
     }
 }
