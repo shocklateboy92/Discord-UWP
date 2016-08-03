@@ -116,6 +116,7 @@
     </Compile>
     <Compile Include="MessageHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="VisibilityConverter.cs" />
     <Compile Include="VoiceDataManager.cs" />
     <Compile Include="VoiceDataSocket.cs" />
     <Compile Include="VoiceDecoder.cs" />

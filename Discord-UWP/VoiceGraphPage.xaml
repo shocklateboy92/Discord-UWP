@@ -12,6 +12,29 @@
             <RowDefinition />
             <RowDefinition />
         </Grid.RowDefinitions>
+        <StackPanel
+            Visibility="{x:Bind ViewModel, Converter={StaticResource VisbilityConverter}, Mode=OneWay}"
+            Grid.Row="0">
+            <TextBlock>
+                Outgoing Voice Microphone Gain
+            </TextBlock>
+            <Slider 
+                x:Name="_outgoingGainSlider"
+                Maximum="2.0"
+                StepFrequency="0.05"
+                Value="{x:Bind ViewModel.OutgoingGain, Mode=TwoWay}" />
+            <ProgressBar
+                x:Name="_outgoingProgressBar"
+                IsIndeterminate="False" />
+            <TextBlock>
+                Outgoing Voice Cut off
+            </TextBlock>
+            <Slider x:Name="_outgoingCutOffSlider" />
+        </StackPanel>
+        <TextBlock
+            Visibility="{x:Bind ViewModel, Converter={StaticResource InverseVisbilityConverter}, Mode=OneWay}" >
+            You are currently not in a voice channel.
+        </TextBlock>
         <ListView
             x:Name="_itemsListView"
             SelectionMode="None"

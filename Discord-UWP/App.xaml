@@ -5,4 +5,14 @@
     xmlns:local="using:Discord_UWP"
     RequestedTheme="Light">
 
+    <Application.Resources>
+        <local:VisibilityConverter 
+            x:Key="VisbilityConverter"
+            TrueValue="Visible"
+            Falsevalue="Collapsed" />
+        <local:VisibilityConverter
+            x:Key="InverseVisbilityConverter"
+            TrueValue="Collapsed"
+            Falsevalue="Visible" />
+    </Application.Resources>
 </Application>

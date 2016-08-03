@@ -153,6 +153,18 @@ namespace Discord_UWP
             _decoders = new Dictionary<uint, VoiceDecoder>();
         private VoiceEncoder _encoder;
 
+        public double OutgoingGain
+        {
+            get
+            {
+                return _inputDevice.OutgoingGain;
+            }
+            set
+            {
+                _inputDevice.OutgoingGain = value;
+            }
+        }
+
         public VoiceDecoder DecoderForSsrc(uint ssrc)
         {
             if (_decoders.ContainsKey(ssrc))

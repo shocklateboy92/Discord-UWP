@@ -52,6 +52,7 @@ namespace Discord_UWP
                 Log.WriteLine($"found guild: '{guild.Name}' ({guild.Id}) with voice channels: {string.Join(", ", voiceChannels)}");
 
                 var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "184883715053322241");
+                //var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "130584500072742913");
 
                 if (hotChannel != null)
                 {
@@ -127,24 +128,27 @@ namespace Discord_UWP
 
         private void OnVoiceStateUpdate(VoiceStateUpdate voiceState)
         {
-            bool doConnect = false;
-            if (_voiceSocket != null)
+            if (voiceState.UserId == Self.Id)
             {
-                // Other event has already happened
-                doConnect = true;
-            }
-            else
-            {
-                _voiceSocket = new VoiceSocket();
-                _voiceSocket.Ready += OnVoiceSocketReady;
-            }
-            _voiceSocket.UserId = voiceState.UserId;
-            _voiceSocket.SessionId = voiceState.SessionId;
-            _voiceSocket.ServerId = voiceState.GuildId;
+                bool doConnect = false;
+                if (_voiceSocket != null)
+                {
+                    // Other event has already happened
+                    doConnect = true;
+                }
+                else
+                {
+                    _voiceSocket = new VoiceSocket();
+                    _voiceSocket.Ready += OnVoiceSocketReady;
+                }
+                _voiceSocket.UserId = voiceState.UserId;
+                _voiceSocket.SessionId = voiceState.SessionId;
+                _voiceSocket.ServerId = voiceState.GuildId;
 
-            if (doConnect)
-            {
-                Task.Run(_voiceSocket.BeginConnection);
+                if (doConnect)
+                {
+                    Task.Run(_voiceSocket.BeginConnection);
+                }
             }
         }
 
@@ -200,7 +204,7 @@ namespace Discord_UWP
                     }
                 });
 
-                ChannelChanged?.Invoke(this, new VoiceGraphViewModel());
+                ChannelChanged?.Invoke(this, new VoiceGraphViewModel(_dataManager, _dataSocket));
             };
             _dataSocket.PacketReceived += _dataManager.ProcessIncomingData;
             await _dataSocket.Initialize(_voiceSocket.Endpoint, e.Port);
@@ -225,10 +229,23 @@ namespace Discord_UWP
 
             public event EventHandler<VoiceGraphInfo> RehighlightItem;
 
-            public VoiceGraphViewModel()
+            public double OutgoingGain
             {
-                App.Client._dataSocket.PacketReceived += 
+                get
+                {
+                    return _dataManager.OutgoingGain;
+                }
+                set
+                {
+                    _dataManager.OutgoingGain = value;
+                }
+            }
+
+            internal VoiceGraphViewModel(VoiceDataManager dataManager, VoiceDataSocket dataSocket)
+            {
+                dataSocket.PacketReceived += 
                     Helpers.HandlerInUiThread<VoiceDataSocket.VoicePacket>(OnDataReceived);
+                _dataManager = dataManager;
             }
 
             private void OnDataReceived(object sender, VoiceDataSocket.VoicePacket e)
@@ -246,6 +263,8 @@ namespace Discord_UWP
 
                 RehighlightItem?.Invoke(this, _sourcesMap[e.Ssrc]);
             }
+
+            private VoiceDataManager _dataManager;
 
             private IDictionary<uint, VoiceGraphInfo> _sourcesMap 
                 = new Dictionary<uint, VoiceGraphInfo>();
