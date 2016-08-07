@@ -69,7 +69,7 @@
                         <Grid.Background>
                             <SolidColorBrush 
                                 x:Name="_delegateBackground"
-                                Color="{ThemeResource SystemColorWindowColor}" />
+                                Color="{ThemeResource ApplicationPageBackgroundThemeBrush}" />
                         </Grid.Background>
                         <TextBlock Grid.Column="0" VerticalAlignment="Center">SSRC: </TextBlock>
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{x:Bind Ssrc}" />
