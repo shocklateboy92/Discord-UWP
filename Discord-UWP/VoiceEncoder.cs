@@ -18,7 +18,7 @@ namespace Discord_UWP
 
         public AudioFrameOutputNode Node { get; private set; }
         public uint Ssrc { get; set; }
-        public double RequiredEnergy { get; set; } = 0.1;
+        public double RequiredEnergy { get; set; } = 0.03;
 
         public VoiceEncoder(AudioGraph graph)
         {
