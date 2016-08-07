@@ -23,5 +23,13 @@ namespace Discord_UWP
                     () => onDataReceived(s, e)
                 ).AsTask();
         }
+
+        public static void RunInUiThread(DispatchedHandler action)
+        {
+            CoreApplication.MainView.Dispatcher.RunAsync(
+                CoreDispatcherPriority.Normal,
+                action
+            ).AsTask();
+        }
     }
 }

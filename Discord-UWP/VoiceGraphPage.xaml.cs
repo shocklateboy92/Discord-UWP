@@ -13,28 +13,35 @@ namespace Discord_UWP
 {
     public sealed partial class VoiceGraphPage : Page
     {
-        public DiscordClient.VoiceGraphViewModel ViewModel { get; private set; } 
+        public VoiceGraphViewModel ViewModel { get; private set; } 
 
         public VoiceGraphPage()
         {
             this.InitializeComponent();
-            App.Client.ChannelChanged += 
-                Helpers.HandlerInUiThread<DiscordClient.VoiceGraphViewModel>(OnViewModelChanged);
+            App.Client.ChannelChanged += OnViewModelChanged;
         }
 
-        public void OnViewModelChanged(object sender, DiscordClient.VoiceGraphViewModel viewModel)
+        ~VoiceGraphPage()
         {
-            if (ViewModel != null)
-            {
-                ViewModel.RehighlightItem -= OnHighlightRequested;
-            }
+            Log.WriteLine("clearning out");
+        }
 
-            ViewModel = viewModel;
-            if (ViewModel != null)
+        public void OnViewModelChanged(object sender, VoiceGraphViewModel viewModel)
+        {
+            Helpers.RunInUiThread(() =>
             {
-                _itemsListView.ItemsSource = ViewModel.AudioSources;
-                ViewModel.RehighlightItem += OnHighlightRequested;
-            }
+                if (ViewModel != null)
+                {
+                    ViewModel.RehighlightItem -= OnHighlightRequested;
+                }
+
+                ViewModel = viewModel;
+                if (ViewModel != null)
+                {
+                    _itemsListView.ItemsSource = ViewModel.AudioSources;
+                    ViewModel.RehighlightItem += OnHighlightRequested;
+                }
+            });
         }
 
         private void OnHighlightRequested(object sender, VoiceGraphInfo e)
@@ -53,6 +60,15 @@ namespace Discord_UWP
             storyboard.Stop();
             storyboard.BeginTime = TimeSpan.FromTicks(0);
             storyboard.Begin();
+        }
+
+        private void Page_Unloaded(object sender, RoutedEventArgs e)
+        {
+            // We want those events to be un-bound when we're gone
+            if (ViewModel != null)
+            {
+                ViewModel.VisualizationEnabled = false;
+            }
         }
     }
 }

@@ -104,6 +104,7 @@
     </Compile>
     <Compile Include="AuthenticationException.cs" />
     <Compile Include="AuthenticationManager.cs" />
+    <Compile Include="VoiceGraphViewModel.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="IMemoryBufferByteAccess.cs" />
     <Compile Include="DiscordClient.cs" />

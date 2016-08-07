@@ -5,6 +5,7 @@
     xmlns:local="using:Discord_UWP"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Unloaded="Page_Unloaded"
     mc:Ignorable="d">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
@@ -15,6 +16,9 @@
         <StackPanel
             Visibility="{x:Bind ViewModel, Converter={StaticResource VisbilityConverter}, Mode=OneWay}"
             Grid.Row="0">
+            <ToggleSwitch 
+                Header="Enable Live Visualizations"
+                IsOn="{x:Bind ViewModel.VisualizationEnabled, Mode=TwoWay}"/>
             <TextBlock>
                 Outgoing Voice Microphone Gain
             </TextBlock>
@@ -37,10 +41,10 @@
                 Maximum="3.0"
                 Value="{x:Bind ViewModel.RequiredEnergy, Mode=TwoWay}"/>
         </StackPanel>
-        <TextBlock
+        <!--<TextBlock
             Visibility="{x:Bind ViewModel, Converter={StaticResource InverseVisbilityConverter}, Mode=OneWay}" >
             You are currently not in a voice channel.
-        </TextBlock>
+        </TextBlock>-->
         <ListView
             x:Name="_itemsListView"
             SelectionMode="None"

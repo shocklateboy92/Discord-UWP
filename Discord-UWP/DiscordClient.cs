@@ -54,8 +54,8 @@ namespace Discord_UWP
                 var voiceChannels = guild.Channels.Where(c => string.Compare(c.Type, "voice", ignoreCase: true) == 0).Select(c => $"'{c.Name}' ({c.Id})");
                 Log.WriteLine($"found guild: '{guild.Name}' ({guild.Id}) with voice channels: {string.Join(", ", voiceChannels)}");
 
-                var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "184883715053322241");
-                //var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "130584500072742913");
+                //var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "184883715053322241");  // Test channel
+                var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "130584500072742913"); // Scrub chat
 
                 if (hotChannel != null)
                 {
@@ -231,77 +231,6 @@ namespace Discord_UWP
             Debug.WriteLine("Closing socket...");
             _gateway.CloseSocket();
             _voiceSocket?.CloseSocket();
-        }
-
-        public class VoiceGraphViewModel : INotifyPropertyChanged
-        {
-            public ObservableCollection<VoiceGraphInfo> AudioSources { get; set; }
-                = new ObservableCollection<VoiceGraphInfo>();
-
-            public event EventHandler<VoiceGraphInfo> RehighlightItem;
-            public event PropertyChangedEventHandler PropertyChanged;
-
-            public double OutgoingGain
-            {
-                get
-                {
-                    return _dataManager.OutgoingGain;
-                }
-                set
-                {
-                    _dataManager.OutgoingGain = value;
-                }
-            }
-
-            public double RequiredEnergy
-            {
-                get
-                {
-                    return _dataManager.RequiredEnergy;
-                }
-                set
-                {
-                    _dataManager.RequiredEnergy = value;
-                }
-            }
-
-            public double LastEnergy { get; private set; }
-
-            internal VoiceGraphViewModel(VoiceDataManager dataManager, VoiceDataSocket dataSocket)
-            {
-                dataSocket.PacketReceived += 
-                    Helpers.HandlerInUiThread<VoiceDataSocket.VoicePacket>(OnDataReceived);
-                _dataManager = dataManager;
-                _dataManager.OutgoingDataReady += 
-                    Helpers.HandlerInUiThread<VoiceDataSocket.VoicePacket>(OnOutgoingData);
-            }
-
-            private void OnOutgoingData(object sender, VoiceDataSocket.VoicePacket e)
-            {
-                LastEnergy = e.Energy;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LastEnergy)));
-            }
-
-            private void OnDataReceived(object sender, VoiceDataSocket.VoicePacket e)
-            {
-                if (!_sourcesMap.ContainsKey(e.Ssrc))
-                {
-                    var decoder = App.Client._dataManager.DecoderForSsrc(e.Ssrc);
-                    if (decoder != null)
-                    {
-                        var info = new VoiceGraphInfo(e.Ssrc, decoder);
-                        _sourcesMap.Add(e.Ssrc, info);
-                        AudioSources.Add(info);
-                    }
-                }
-
-                RehighlightItem?.Invoke(this, _sourcesMap[e.Ssrc]);
-            }
-
-            private VoiceDataManager _dataManager;
-
-            private IDictionary<uint, VoiceGraphInfo> _sourcesMap 
-                = new Dictionary<uint, VoiceGraphInfo>();
         }
     }
 }
