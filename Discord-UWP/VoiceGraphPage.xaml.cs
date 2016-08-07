@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using Windows.UI.Xaml;
@@ -11,9 +12,9 @@ using Windows.UI.Xaml.Media.Animation;
 
 namespace Discord_UWP
 {
-    public sealed partial class VoiceGraphPage : Page
+    public sealed partial class VoiceGraphPage : UserControl, INotifyPropertyChanged
     {
-        public VoiceGraphViewModel ViewModel { get; private set; } 
+        public VoiceGraphViewModel ViewModel { get; private set; }
 
         public VoiceGraphPage()
         {
@@ -26,6 +27,8 @@ namespace Discord_UWP
             Log.WriteLine("clearning out");
         }
 
+        public event PropertyChangedEventHandler PropertyChanged;
+
         public void OnViewModelChanged(object sender, VoiceGraphViewModel viewModel)
         {
             Helpers.RunInUiThread(() =>
@@ -36,6 +39,8 @@ namespace Discord_UWP
                 }
 
                 ViewModel = viewModel;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ViewModel)));
+                
                 if (ViewModel != null)
                 {
                     _itemsListView.ItemsSource = ViewModel.AudioSources;
