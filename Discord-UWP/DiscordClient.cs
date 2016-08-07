@@ -13,6 +13,7 @@ using Windows.ApplicationModel.Core;
 using Windows.Data.Json;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
+using Windows.System.Display;
 
 namespace Discord_UWP
 {
@@ -24,6 +25,7 @@ namespace Discord_UWP
         private VoiceSocket _voiceSocket;
         private VoiceDataSocket _dataSocket;
         private VoiceDataManager _dataManager;
+        private DisplayRequest _wakeLock;
 
         public User Self { get; private set; }
         public Guild TargetGuild { get; private set; }
@@ -93,6 +95,8 @@ namespace Discord_UWP
 
         internal async void LeaveChannel()
         {
+            _wakeLock?.RequestActive();
+
             await _gateway.SendMessage(new
             {
                 op = 4,
@@ -114,6 +118,12 @@ namespace Discord_UWP
 
         internal async void JoinChannel()
         {
+            if (_wakeLock == null)
+            {
+                _wakeLock = new DisplayRequest();
+            }
+            _wakeLock.RequestActive();
+
             await _gateway.SendMessage(new
             {
                 op = 4,
