@@ -69,9 +69,9 @@ namespace Discord_UWP
             }
         }
 
-        internal async void StopSendingVoice()
+        internal void StopSendingVoice()
         {
-            await _voiceSocket.SendMessage(new
+            _voiceSocket?.SendMessage(new
             {
                 op = 5,
                 d = new
@@ -80,12 +80,12 @@ namespace Discord_UWP
                     delay = 0
                 }
             });
-            _dataManager.StopOutgoingAudio();
+            _dataManager?.StopOutgoingAudio();
         }
 
-        internal async void StartSendingVoice()
+        internal void StartSendingVoice()
         {
-            await _voiceSocket.SendMessage(new
+            _voiceSocket?.SendMessage(new
             {
                 op = 5,
                 d = new
@@ -94,12 +94,12 @@ namespace Discord_UWP
                     delay = 0
                 }
             });
-            _dataManager.StartOutgoingAudio(SelfSsrc);
+            _dataManager?.StartOutgoingAudio(SelfSsrc);
         }
 
         internal async void LeaveChannel()
         {
-            _wakeLock?.RequestActive();
+            _wakeLock?.RequestRelease();
 
             await _gateway.SendMessage(new
             {
