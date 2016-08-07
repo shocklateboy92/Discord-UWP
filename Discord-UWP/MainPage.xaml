@@ -9,45 +9,47 @@
     Loaded="Page_Loaded"
     mc:Ignorable="d">
 
-    <Pivot>
-        <PivotItem Header="Main">
-            <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                <StackPanel Orientation="Horizontal" Grid.Row="0">
-
-                    <Button Click="OnJoinScrubClicked">Join Scrub</Button>
-                    <Button Click="OnLeaveScrubClicked">Leave Scrub</Button>
-                    <Button Click="OnStartVoiceClicked">Start Voice</Button>
-                    <Button Click="OnStopVoiceClicked">Stop Voice</Button>
-                    <Button Click="VoiceInfoClicked">Voice Sources</Button>
-                </StackPanel>
-                <ListView 
-            x:Name="_logListView"
-            Grid.Row="1"
-            SelectionChanged="ListView_SelectionChanged"
-            ItemsSource="{x:Bind LogMessages}">
-                    <ListView.ItemTemplate>
-                        <DataTemplate x:DataType="System:String">
-                            <TextBlock
-                        FontFamily="Consolas"
-                        Text="{x:Bind}"/>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="MinHeight" Value="0"/>
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                </ListView>
-            </Grid>
-        </PivotItem>
-        <PivotItem Header="Voice Sources">
-            <local:VoiceGraphPage>
-                
-            </local:VoiceGraphPage>
-        </PivotItem>
-    </Pivot>
+    <StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="0">
+            <Button Click="OnJoinScrubClicked">Join Scrub</Button>
+            <Button Click="OnLeaveScrubClicked">Leave Scrub</Button>
+            <Button Click="OnStartVoiceClicked">Start Voice</Button>
+            <Button Click="OnStopVoiceClicked">Stop Voice</Button>
+            <Button Click="VoiceInfoClicked">Voice Sources</Button>
+        </StackPanel>
+        <Pivot>
+            <PivotItem Header="Main">
+                <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <ListView 
+                        x:Name="_logListView"
+                        Grid.Row="1"
+                        SelectionChanged="ListView_SelectionChanged"
+                        ItemsSource="{x:Bind LogMessages}">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="System:String">
+                                <TextBlock
+                                    FontFamily="Consolas"
+                                    Text="{x:Bind}" />
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="MinHeight" Value="0" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                    </ListView>
+                </Grid>
+            </PivotItem>
+            <PivotItem Header="Voice Sources">
+                <local:VoiceGraphPage />
+            </PivotItem>
+            <PivotItem Header="Channel Info">
+                <local:ChannelInfoPage />
+            </PivotItem>
+        </Pivot>
+    </StackPanel>
 </Page>

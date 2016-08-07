@@ -104,6 +104,11 @@
     </Compile>
     <Compile Include="AuthenticationException.cs" />
     <Compile Include="AuthenticationManager.cs" />
+    <Compile Include="ChannelInfoPage.xaml.cs">
+      <DependentUpon>ChannelInfoPage.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ChannelInfoViewModel.cs" />
+    <Compile Include="UserStateManager.cs" />
     <Compile Include="VoiceGraphViewModel.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="IMemoryBufferByteAccess.cs" />
@@ -150,6 +155,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="ChannelInfoPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainPage.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

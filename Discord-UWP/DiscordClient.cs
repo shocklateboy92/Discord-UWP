@@ -31,6 +31,8 @@ namespace Discord_UWP
         public Guild TargetGuild { get; private set; }
         public Channel TargetChannel { get; private set; }
         public uint SelfSsrc { get; private set; }
+        public GuildUserManager UserManager { get; } = new GuildUserManager();
+
         public event EventHandler<VoiceGraphViewModel> ChannelChanged;
 
         public DiscordClient()
@@ -61,6 +63,8 @@ namespace Discord_UWP
                 {
                     TargetChannel = hotChannel;
                     TargetGuild = guild;
+
+                    UserManager.ProcessGuildChannel(TargetGuild, TargetChannel);
                 }
             }
         }

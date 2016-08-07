@@ -340,7 +340,7 @@ namespace Discord_UWP
     {
 
         [JsonProperty("voice_states")]
-        public IList<VoiceState> VoiceStates { get; set; }
+        public IList<VoiceStateUpdate> VoiceStates { get; set; }
 
         [JsonProperty("verification_level")]
         public int VerificationLevel { get; set; }
