@@ -9,15 +9,18 @@
     Loaded="Page_Loaded"
     mc:Ignorable="d">
 
-    <StackPanel>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" Grid.Row="0">
             <Button Click="OnJoinScrubClicked">Join Scrub</Button>
             <Button Click="OnLeaveScrubClicked">Leave Scrub</Button>
             <Button Click="OnStartVoiceClicked">Start Voice</Button>
             <Button Click="OnStopVoiceClicked">Stop Voice</Button>
-            <Button Click="VoiceInfoClicked">Voice Sources</Button>
         </StackPanel>
-        <Pivot>
+        <Pivot Grid.Row="1">
             <PivotItem Header="Main">
                 <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
                     <Grid.RowDefinitions>
@@ -51,5 +54,5 @@
                 <local:ChannelInfoPage />
             </PivotItem>
         </Pivot>
-    </StackPanel>
+    </Grid>
 </Page>

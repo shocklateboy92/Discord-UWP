@@ -32,13 +32,41 @@ namespace Discord_UWP
                     CurrentUsers.Add(GetUser(state.UserId));
                 }
             }
+
+            _channel = targetChannel;
         }
 
         public User GetUser(string id) => _usersMap[id];
 
         private Guild _guild;
+        private Channel _channel;
 
         private IDictionary<string, User> _usersMap =
             new Dictionary<string, User>();
+
+        public void ProcessVoiceStateUpdate(VoiceStateUpdate voiceState)
+        {
+            // We don't have to care if they're not in our guild
+            if (voiceState.GuildId == _guild.Id)
+            {
+                Helpers.RunInUiThread(() =>
+                {
+                    var user = GetUser(voiceState.UserId);
+                    if (string.IsNullOrWhiteSpace(voiceState.ChannelId))
+                    {
+                        // They've left a channel - it might have been ours
+                        CurrentUsers.Remove(user);
+                    }
+                    else if (voiceState.ChannelId == _channel.Id)
+                    {
+                        // They're in our channel - they might have just joined
+                        if (!CurrentUsers.Contains(user))
+                        {
+                            CurrentUsers.Add(user);
+                        }
+                    }
+                });
+            }
+        }
     }
 }

@@ -56,8 +56,8 @@ namespace Discord_UWP
                 var voiceChannels = guild.Channels.Where(c => string.Compare(c.Type, "voice", ignoreCase: true) == 0).Select(c => $"'{c.Name}' ({c.Id})");
                 Log.WriteLine($"found guild: '{guild.Name}' ({guild.Id}) with voice channels: {string.Join(", ", voiceChannels)}");
 
-                //var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "184883715053322241");  // Test channel
-                var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "130584500072742913"); // Scrub chat
+                var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "184883715053322241");  // Test channel
+                //var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "130584500072742913"); // Scrub chat
 
                 if (hotChannel != null)
                 {
@@ -164,6 +164,9 @@ namespace Discord_UWP
                 {
                     Task.Run(_voiceSocket.BeginConnection);
                 }
+            } else
+            {
+                UserManager.ProcessVoiceStateUpdate(voiceState);
             }
         }
 

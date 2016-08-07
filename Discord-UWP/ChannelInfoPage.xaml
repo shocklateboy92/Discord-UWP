@@ -9,20 +9,28 @@
     d:DesignHeight="300"
     d:DesignWidth="400">
 
-    <VariableSizedWrapGrid
-        Orientation="Vertical">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            Grid.Row="0"
+            Style="{StaticResource SubtitleTextBlockStyle}"
+            Text="{x:Bind ViewModel.ChannelName}" />
 
         <ListView
+            Grid.Row="1"
             ItemsSource="{x:Bind ViewModel.Users}">
 
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:User">
                     <StackPanel Orientation="Vertical">
                         <TextBlock Text="{x:Bind Username}" />
-                        <TextBlock Text="{x:Bind Email}" />
                     </StackPanel>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
-    </VariableSizedWrapGrid>
+    </Grid>
 </UserControl>
