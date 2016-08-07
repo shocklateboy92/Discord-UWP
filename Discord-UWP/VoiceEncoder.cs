@@ -17,8 +17,12 @@ namespace Discord_UWP
         static readonly uint[] SupportedFrameSizes = { 120, 240, 480, 960, 1920 };
 
         public AudioFrameOutputNode Node { get; private set; }
+
         public uint Ssrc { get; set; }
+
         public double RequiredEnergy { get; set; } = 0.03;
+
+        public int MaxTrailingPackets { get; set; } = 5;
 
         public VoiceEncoder(AudioGraph graph)
         {
@@ -46,7 +50,14 @@ namespace Discord_UWP
                 var e = Math.Sqrt(_preEncodeBuffer.Take((int)frameSize).Select(x => ((double)x) * x).Sum() / frameSize);
                 if (e < RequiredEnergy)
                 {
-                    return null;
+                    _currentTrailingPackets++;
+                    if (_currentTrailingPackets > MaxTrailingPackets)
+                    {
+                        return null;
+                    }
+                } else
+                {
+                    _currentTrailingPackets = 0;
                 }
 
                 // We're abandoning extra data that won't fit nicely into a frame
@@ -128,5 +139,6 @@ namespace Discord_UWP
         private object _encodeLock = new object();
         private ushort _sequence;
         private uint _timeStamp;
+        private int _currentTrailingPackets;
     }
 }

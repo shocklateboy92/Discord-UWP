@@ -33,13 +33,22 @@
                 Value="{x:Bind ViewModel.LastEnergy, Mode=OneWay}"
                 IsIndeterminate="False" />
             <TextBlock>
-                Outgoing Voice Cut off
+                Outgoing Voice Cut-off
             </TextBlock>
             <Slider 
                 x:Name="_outgoingCutOffSlider"
                 StepFrequency="0.01"
                 Maximum="1.0"
-                Value="{x:Bind ViewModel.RequiredEnergy, Mode=TwoWay}"/>
+                Value="{x:Bind ViewModel.RequiredEnergy, Mode=TwoWay}" />
+            <TextBlock>
+                Transmission following Cut-off
+            </TextBlock>
+            <Slider
+                TickFrequency="1"
+                TickPlacement="Inline"
+                StepFrequency="1"
+                Maximum="10"
+                Value="{x:Bind ViewModel.TrailingPackets, Mode=TwoWay}" />
         </StackPanel>
         <!--<TextBlock
             Visibility="{x:Bind ViewModel, Converter={StaticResource InverseVisbilityConverter}, Mode=OneWay}" >

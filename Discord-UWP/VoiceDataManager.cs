@@ -90,6 +90,18 @@ namespace Discord_UWP
             }
         }
 
+        public int TrailingPackets
+        {
+            get
+            {
+                return _encoder.MaxTrailingPackets;
+            }
+            set
+            {
+                _encoder.MaxTrailingPackets = value;
+            }
+        }
+
         public VoiceDecoder DecoderForSsrc(uint ssrc)
         {
             if (_decoders.ContainsKey(ssrc))

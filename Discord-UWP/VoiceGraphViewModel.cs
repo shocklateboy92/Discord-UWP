@@ -40,6 +40,18 @@ namespace Discord_UWP
             }
         }
 
+        public double TrailingPackets
+        {
+            get
+            {
+                return _dataManager.TrailingPackets;
+            }
+            set
+            {
+                _dataManager.TrailingPackets = (int) Math.Round(value);
+            }
+        }
+
         public double LastEnergy { get; private set; }
 
         public bool VisualizationEnabled
