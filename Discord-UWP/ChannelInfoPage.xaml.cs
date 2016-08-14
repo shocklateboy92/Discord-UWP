@@ -62,7 +62,11 @@ namespace Discord_UWP
         {
             if (e.AddedItems.Any())
             {
-                App.Client.TargetChannel = (ChannelInfo)e.AddedItems.First();
+                var channel = (ChannelInfo)e.AddedItems.First();
+                if (channel.IsVoice)
+                {
+                    App.Client.TargetChannel = channel;
+                }
             }
         }
     }
