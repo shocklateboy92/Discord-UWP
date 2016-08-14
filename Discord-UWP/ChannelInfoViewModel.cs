@@ -7,11 +7,18 @@ using System.Threading.Tasks;
 
 namespace Discord_UWP
 {
-    public class ChannelInfoViewModel
+    public class ChannelInfo
     {
         public ObservableCollection<User> Users
             => App.Client?.UserManager.CurrentUsers;
 
         public string ChannelName => $"{App.Client.TargetChannel.Name} ({App.Client.TargetGuild.Name})";
+
+        public ChannelInfo(Channel channel)
+        {
+            _channel = channel;
+        }
+
+        private Channel _channel;
     }
 }

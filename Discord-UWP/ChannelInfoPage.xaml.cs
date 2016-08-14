@@ -19,7 +19,7 @@ namespace Discord_UWP
 {
     public sealed partial class ChannelInfoPage : UserControl
     {
-        public ChannelInfoViewModel ViewModel { get; } = new ChannelInfoViewModel();
+        public ChannelInfo ViewModel { get; } = null;
 
         public ChannelInfoPage()
         {
