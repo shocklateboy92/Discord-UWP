@@ -11,21 +11,31 @@
     d:DesignHeight="300"
     d:DesignWidth="400">
 
-        <ListView
-            ItemsSource="{x:Bind ViewModel.Channels, Mode=OneWay}">
+    <ListView
+        ItemsSource="{x:Bind ViewModel.Channels, Mode=OneWay}">
 
-            <ListView.ItemTemplate>
-                <DataTemplate x:DataType="local:ChannelInfo">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
+        <ListView.ItemTemplate>
+            <DataTemplate x:DataType="local:ChannelInfo">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
+                    <StackPanel Orientation="Horizontal" Grid.Row="0">
+                        <FontIcon 
+                            Margin="10,0"
+                            Visibility="{x:Bind IsVoice, Mode=OneWay, Converter={StaticResource VisibilityConverter}}"
+                            Glyph="&#xE789;" />
+                        <FontIcon
+                            Margin="10,0"
+                            Visibility="{x:Bind IsVoice, Mode=OneWay, Converter={StaticResource InverseVisibilityConverter}}"
+                            Glyph="&#xE8E4;" />
                         <TextBlock
                                 Grid.Row="0"
                                 Style="{StaticResource SubtitleTextBlockStyle}"
                                 Text="{x:Bind ChannelName, Mode=OneWay}" />
+                    </StackPanel>
 
                         <ListView
                                 Grid.Row="1"
@@ -41,7 +51,13 @@
                         </ListView>
                     </Grid>
                 </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
-
+        </ListView.ItemTemplate>
+        <ListView.ItemContainerStyle>
+            <Style TargetType="ListViewItem">
+                <Style.Setters>
+                    <Setter Property="Padding" Value="0" />
+                </Style.Setters>
+            </Style>
+        </ListView.ItemContainerStyle>
+    </ListView>
 </UserControl>

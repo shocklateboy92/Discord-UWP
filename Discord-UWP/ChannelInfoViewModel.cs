@@ -14,6 +14,10 @@ namespace Discord_UWP
 
         public string ChannelName => _channel.Name;
 
+        public bool IsVoice => string.Equals(
+            _channel.Type, "voice", StringComparison.OrdinalIgnoreCase
+        );
+
         public ChannelInfo(Channel channel)
         {
             _channel = channel;
