@@ -17,7 +17,7 @@
 
         <Style
             x:Key="NavEllipseStyle"
-            TargetType="Ellipse">
+            TargetType="FrameworkElement">
             <Style.Setters>
                 <Setter Property="Width" Value="40" />
                 <Setter Property="Height" Value="40" />
