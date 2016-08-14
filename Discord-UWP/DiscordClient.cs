@@ -176,6 +176,7 @@ namespace Discord_UWP
             } else
             {
                 UserManager.ProcessVoiceStateUpdate(voiceState);
+                GuildManager.ProcessVoiceStateUpdate(voiceState);
             }
         }
 

@@ -110,6 +110,7 @@
     <Compile Include="ChannelInfoViewModel.cs" />
     <Compile Include="GuildInfo.cs" />
     <Compile Include="GuildManager.cs" />
+    <Compile Include="UserInfo.cs" />
     <Compile Include="UserStateManager.cs" />
     <Compile Include="VoiceGraphViewModel.cs" />
     <Compile Include="Helpers.cs" />

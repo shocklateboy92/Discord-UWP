@@ -10,6 +10,7 @@ namespace Discord_UWP
 
         public string Name => _guild.Name;
 
+        public string Id => _guild.Id;
         public string IconUrl => $"https://cdn.discordapp.com/icons/{_guild.Id}/{_guild.Icon}.jpg";
 
         public bool HasIcon => !string.IsNullOrWhiteSpace(_guild.Icon);
@@ -22,7 +23,7 @@ namespace Discord_UWP
 
             foreach (var channel in guild.Channels)
             {
-                Channels.Add(new ChannelInfo(channel));
+                Channels.Add(new ChannelInfo(channel, guild.VoiceStates));
             }
         }
 
