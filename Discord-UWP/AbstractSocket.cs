@@ -92,8 +92,8 @@ namespace Discord_UWP
 
         public void CloseSocket()
         {
-            _gatewaySocket.Dispose();
-            _heartbeatTimer.Dispose();
+            _gatewaySocket?.Dispose();
+            _heartbeatTimer?.Dispose();
         }
 
         /// <summary>

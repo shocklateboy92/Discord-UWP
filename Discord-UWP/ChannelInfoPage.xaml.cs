@@ -57,5 +57,13 @@ namespace Discord_UWP
 
         private void OnGuildChanged(object sender, GuildInfo e) =>
             Helpers.RunInUiThread(() => { ViewModel = e; });
+
+        private void OnChannelSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Any())
+            {
+                App.Client.TargetChannel = (ChannelInfo)e.AddedItems.First();
+            }
+        }
     }
 }

@@ -12,6 +12,7 @@
     d:DesignWidth="400">
 
     <ListView
+        SelectionChanged="OnChannelSelectionChanged"
         ItemsSource="{x:Bind ViewModel.Channels, Mode=OneWay}">
 
         <ListView.ItemTemplate>

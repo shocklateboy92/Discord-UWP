@@ -27,9 +27,9 @@ namespace Discord_UWP
         private VoiceDataManager _dataManager;
         private DisplayRequest _wakeLock;
 
-        public User Self { get; private set; }
-        public Guild TargetGuild { get; private set; }
-        public Channel TargetChannel { get; private set; }
+        public UserInfo Self { get; private set; }
+        public GuildInfo TargetGuild => GuildManager.CurrentGuild;
+        public ChannelInfo TargetChannel { get; set; }
         public uint SelfSsrc { get; private set; }
         public GuildManager GuildManager { get; } = new GuildManager();
 
@@ -50,7 +50,7 @@ namespace Discord_UWP
 
         private void OnInitialStateReceived(D initialState)
         {
-            Self = initialState.User;
+            Self = new UserInfo(initialState.User);
             foreach (var guild in initialState.Guilds)
             {
                 var voiceChannels = guild.Channels.Where(c => string.Compare(c.Type, "voice", ignoreCase: true) == 0).Select(c => $"'{c.Name}' ({c.Id})");
@@ -58,14 +58,10 @@ namespace Discord_UWP
 
                 var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "184883715053322241");  // Test channel
                 //var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "130584500072742913"); // Scrub chat
-
-                if (hotChannel != null)
-                {
-                    TargetChannel = hotChannel;
-                    TargetGuild = guild;
-                }
             }
             GuildManager.ProcessInitialState(initialState);
+            TargetChannel = GuildManager.ActiveGuilds.FirstOrDefault()?
+                .Channels.FirstOrDefault(c => c.Id == "130584500072742913");
         }
 
         internal void StopSendingVoice()
@@ -121,7 +117,7 @@ namespace Discord_UWP
 
         internal async void JoinChannel()
         {
-            if (TargetChannel == null || TargetChannel == null)
+            if (TargetGuild == null || TargetChannel == null)
             {
                 // Don't crash if user hasn't selected a channel
                 return;
@@ -170,10 +166,10 @@ namespace Discord_UWP
                 {
                     Task.Run(_voiceSocket.BeginConnection);
                 }
-            } else
-            {
-                GuildManager.ProcessVoiceStateUpdate(voiceState);
             }
+
+            // This thing can handle seeing self
+            GuildManager.ProcessVoiceStateUpdate(voiceState);
         }
 
         private void OnVoiceServerUpdate(VoiceServerUpdate voiceServer)
@@ -242,7 +238,7 @@ namespace Discord_UWP
         public void CloseSockets()
         {
             Debug.WriteLine("Closing socket...");
-            _gateway.CloseSocket();
+            _gateway?.CloseSocket();
             _voiceSocket?.CloseSocket();
         }
     }
