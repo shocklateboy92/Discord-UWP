@@ -9,50 +9,115 @@
     Loaded="Page_Loaded"
     mc:Ignorable="d">
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal" Grid.Row="0">
-            <Button Click="OnJoinScrubClicked">Join Scrub</Button>
-            <Button Click="OnLeaveScrubClicked">Leave Scrub</Button>
-            <Button Click="OnStartVoiceClicked">Start Voice</Button>
-            <Button Click="OnStopVoiceClicked">Stop Voice</Button>
-        </StackPanel>
-        <Pivot Grid.Row="1">
-            <PivotItem Header="Main">
-                <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <SplitView
+        DisplayMode="CompactOverlay"
+        x:Name="_navSplit">
+
+        <SplitView.Pane>
+            <ListView
+                ItemsSource="{x:Bind Guilds}">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="local:GuildInfo">
+                        <StackPanel 
+                            Orientation="Horizontal">
+                            <Ellipse
+                                Visibility="{x:Bind HasIcon, Mode=OneWay, Converter={StaticResource VisibilityConverter}}"
+                                Style="{StaticResource NavEllipseStyle}">
+
+                                <Ellipse.Fill>
+                                    <ImageBrush ImageSource="{x:Bind IconUrl, Mode=OneWay}" />
+                                </Ellipse.Fill>
+                            </Ellipse>
+
+                            <Grid
+                                Visibility="{x:Bind HasIcon, Mode=OneWay, Converter={StaticResource InverseVisibilityConverter}}">
+                                <Ellipse Style="{StaticResource NavEllipseStyle}" Fill="Gray" />
+                                <TextBlock 
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Text="{x:Bind TitleText}" />
+                            </Grid>
+
+                            <TextBlock 
+                                Text="{x:Bind Name, Mode=OneWay}"
+                                Padding="5,0"
+                                VerticalAlignment="Center" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Style.Setters>
+                            <Setter Property="Margin" Value="0,0,0,0" />
+                            <Setter Property="Padding" Value="0,0,0,0" />
+                        </Style.Setters>
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
+        </SplitView.Pane>
+
+        <SplitView.Content>
+            <Frame>
+                <Frame.ContentTransitions>
+                    <TransitionCollection>
+                        <NavigationThemeTransition>
+                            <NavigationThemeTransition.DefaultNavigationTransitionInfo>
+                                <EntranceNavigationTransitionInfo />
+                            </NavigationThemeTransition.DefaultNavigationTransitionInfo>
+                        </NavigationThemeTransition>
+                    </TransitionCollection>
+                </Frame.ContentTransitions>
+                <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <ListView 
-                        x:Name="_logListView"
-                        Grid.Row="1"
-                        SelectionChanged="ListView_SelectionChanged"
-                        ItemsSource="{x:Bind LogMessages}">
-                        <ListView.ItemTemplate>
-                            <DataTemplate x:DataType="System:String">
-                                <TextBlock
+
+                    <StackPanel Orientation="Horizontal" Grid.Row="0">
+                        <Button Click="OnJoinScrubClicked">Join Scrub</Button>
+                        <Button Click="OnLeaveScrubClicked">Leave Scrub</Button>
+                        <Button Click="OnStartVoiceClicked">Start Voice</Button>
+                        <Button Click="OnStopVoiceClicked">Stop Voice</Button>
+                        <Button Click="Button_Click">...</Button>
+                    </StackPanel>
+
+                    <Pivot Grid.Row="1">
+                        <PivotItem Header="Main">
+                            <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <ListView 
+                                    x:Name="_logListView"
+                                    Grid.Row="1"
+                                    SelectionChanged="ListView_SelectionChanged"
+                                    ItemsSource="{x:Bind LogMessages}">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="System:String">
+                                            <TextBlock
                                     FontFamily="Consolas"
                                     Text="{x:Bind}" />
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="ListViewItem">
-                                <Setter Property="MinHeight" Value="0" />
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                    </ListView>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <Setter Property="MinHeight" Value="0" />
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                </ListView>
+                            </Grid>
+                        </PivotItem>
+                        <PivotItem Header="Voice Sources">
+                            <local:VoiceGraphPage />
+                        </PivotItem>
+                        <PivotItem Header="Channel Info">
+                            <local:ChannelInfoPage />
+                        </PivotItem>
+                    </Pivot>
                 </Grid>
-            </PivotItem>
-            <PivotItem Header="Voice Sources">
-                <local:VoiceGraphPage />
-            </PivotItem>
-            <PivotItem Header="Channel Info">
-                <local:ChannelInfoPage />
-            </PivotItem>
-        </Pivot>
-    </Grid>
+            </Frame>
+        </SplitView.Content>
+
+    </SplitView>
 </Page>

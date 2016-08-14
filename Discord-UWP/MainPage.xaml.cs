@@ -26,6 +26,8 @@ namespace Discord_UWP
     {
         public ObservableCollection<string> LogMessages => Log.CurrentMessages;
 
+        public ObservableCollection<GuildInfo> Guilds => App.Client.GuildManager.CurrentGuilds;
+
         public MainPage()
         {
             this.InitializeComponent();
@@ -60,5 +62,10 @@ namespace Discord_UWP
         private void OnStartVoiceClicked(object sender, RoutedEventArgs e) => App.Client.StartSendingVoice();
 
         private void OnStopVoiceClicked(object sender, RoutedEventArgs e) => App.Client.StopSendingVoice();
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            _navSplit.IsPaneOpen = !_navSplit.IsPaneOpen;
+        }
     }
 }

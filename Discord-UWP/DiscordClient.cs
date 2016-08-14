@@ -32,6 +32,7 @@ namespace Discord_UWP
         public Channel TargetChannel { get; private set; }
         public uint SelfSsrc { get; private set; }
         public GuildUserManager UserManager { get; } = new GuildUserManager();
+        public GuildManager GuildManager { get; } = new GuildManager();
 
         public event EventHandler<VoiceGraphViewModel> ChannelChanged;
 
@@ -67,6 +68,7 @@ namespace Discord_UWP
                     UserManager.ProcessGuildChannel(TargetGuild, TargetChannel);
                 }
             }
+            GuildManager.ProcessInitialState(initialState);
         }
 
         internal void StopSendingVoice()

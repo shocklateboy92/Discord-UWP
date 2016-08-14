@@ -7,12 +7,23 @@
 
     <Application.Resources>
         <local:VisibilityConverter 
-            x:Key="VisbilityConverter"
+            x:Key="VisibilityConverter"
             TrueValue="Visible"
             Falsevalue="Collapsed" />
         <local:VisibilityConverter
-            x:Key="InverseVisbilityConverter"
+            x:Key="InverseVisibilityConverter"
             TrueValue="Collapsed"
             Falsevalue="Visible" />
+
+        <Style
+            x:Key="NavEllipseStyle"
+            TargetType="Ellipse">
+            <Style.Setters>
+                <Setter Property="Width" Value="40" />
+                <Setter Property="Height" Value="40" />
+                <Setter Property="Margin" Value="4,4" />
+            </Style.Setters>
+        </Style>
+
     </Application.Resources>
 </Application>
