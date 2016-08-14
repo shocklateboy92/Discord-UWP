@@ -20,30 +20,42 @@ namespace Discord_UWP
 {
     public sealed partial class ChannelInfoPage : UserControl, INotifyPropertyChanged
     {
-        public GuildInfo ViewModel { get; private set; }
-
+        GuildInfo _viewModel;
+        public GuildInfo ViewModel
+        {
+            get
+            {
+                return _viewModel;
+            }
+            private set
+            {
+                if (_viewModel != value)
+                {
+                    _viewModel = value;
+                    PropertyChanged?.Invoke(
+                        this,
+                        new PropertyChangedEventArgs(nameof(ViewModel))
+                    );
+                }
+            }
+        }
         public ChannelInfoPage()
         {
-            ViewModel = App.Client.GuildManager.CurrentGuild;
             this.InitializeComponent();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        private void OnLoaded(object sender, RoutedEventArgs e) =>
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
             App.Client.GuildManager.CurrentGuildChanged += OnGuildChanged;
+            ViewModel = App.Client.GuildManager.CurrentGuild;
+        }
 
         private void OnUnloaded(object sender, RoutedEventArgs e) =>
             App.Client.GuildManager.CurrentGuildChanged -= OnGuildChanged;
 
         private void OnGuildChanged(object sender, GuildInfo e) =>
-            Helpers.RunInUiThread(() =>
-            {
-                ViewModel = e;
-                PropertyChanged?.Invoke(
-                    this,
-                    new PropertyChangedEventArgs(nameof(ViewModel))
-                );
-            });
+            Helpers.RunInUiThread(() => { ViewModel = e; });
     }
 }

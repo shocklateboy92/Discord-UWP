@@ -114,9 +114,9 @@ namespace Discord_UWP
                     SelfMute = false
                 }
             });
-            _voiceSocket.CloseSocket();
-            _dataManager.Dispose();
-            _dataSocket.Dispose();
+            _voiceSocket?.CloseSocket();
+            _dataManager?.Dispose();
+            _dataSocket?.Dispose();
             _voiceSocket = null;
             _dataManager = null;
             _dataSocket = null;
@@ -124,10 +124,17 @@ namespace Discord_UWP
 
         internal async void JoinChannel()
         {
+            if (TargetChannel == null || TargetChannel == null)
+            {
+                // Don't crash if user hasn't selected a channel
+                return;
+            }
+
             if (_wakeLock == null)
             {
                 _wakeLock = new DisplayRequest();
             }
+
             _wakeLock.RequestActive();
 
             await _gateway.SendMessage(new
