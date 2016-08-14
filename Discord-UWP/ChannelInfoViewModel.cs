@@ -12,7 +12,7 @@ namespace Discord_UWP
         public ObservableCollection<User> Users
             => App.Client?.UserManager.CurrentUsers;
 
-        public string ChannelName => $"{App.Client.TargetChannel.Name} ({App.Client.TargetGuild.Name})";
+        public string ChannelName => _channel.Name;
 
         public ChannelInfo(Channel channel)
         {

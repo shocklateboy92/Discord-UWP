@@ -26,7 +26,7 @@ namespace Discord_UWP
     {
         public ObservableCollection<string> LogMessages => Log.CurrentMessages;
 
-        public ObservableCollection<GuildInfo> Guilds => App.Client.GuildManager.CurrentGuilds;
+        public ObservableCollection<GuildInfo> Guilds => App.Client.GuildManager.ActiveGuilds;
 
         public MainPage()
         {
@@ -67,5 +67,8 @@ namespace Discord_UWP
         {
             _navSplit.IsPaneOpen = !_navSplit.IsPaneOpen;
         }
+
+        private void OnSelectedNavItemChanged(object sender, SelectionChangedEventArgs e) =>
+            App.Client.GuildManager.CurrentGuild = (GuildInfo) e.AddedItems.First();
     }
 }

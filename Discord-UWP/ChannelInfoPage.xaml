@@ -6,31 +6,42 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
+    Loaded="OnLoaded"
+    Unloaded="OnUnloaded"
     d:DesignHeight="300"
     d:DesignWidth="400">
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <TextBlock
-            Grid.Row="0"
-            Style="{StaticResource SubtitleTextBlockStyle}"
-            Text="{x:Bind ViewModel.ChannelName}" />
-
         <ListView
-            Grid.Row="1"
-            ItemsSource="{x:Bind ViewModel.Users}">
+            ItemsSource="{x:Bind ViewModel.Channels, Mode=OneWay}">
 
             <ListView.ItemTemplate>
-                <DataTemplate x:DataType="local:User">
-                    <StackPanel Orientation="Vertical">
-                        <TextBlock Text="{x:Bind Username}" />
-                    </StackPanel>
+                <DataTemplate x:DataType="local:ChannelInfo">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock
+                                Grid.Row="0"
+                                Style="{StaticResource SubtitleTextBlockStyle}"
+                                Text="{x:Bind ChannelName, Mode=OneWay}" />
+
+                        <ListView
+                                Grid.Row="1"
+                                ItemsSource="{x:Bind Users, Mode=OneWay}">
+
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="local:User">
+                                    <StackPanel Orientation="Vertical">
+                                        <TextBlock Text="{x:Bind Username, Mode=OneWay}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
-    </Grid>
+
 </UserControl>

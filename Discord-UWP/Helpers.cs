@@ -26,10 +26,18 @@ namespace Discord_UWP
 
         public static void RunInUiThread(DispatchedHandler action)
         {
-            CoreApplication.MainView.Dispatcher.RunAsync(
-                CoreDispatcherPriority.Normal,
-                action
-            ).AsTask();
+            if (!CoreApplication.MainView.Dispatcher.HasThreadAccess)
+            {
+                CoreApplication.MainView.Dispatcher.RunAsync(
+                    CoreDispatcherPriority.Normal,
+                    action
+                ).AsTask();
+            }
+            else
+            {
+                // We are already on the UI thread. Just run the action
+                action?.Invoke();
+            }
         }
     }
 }
