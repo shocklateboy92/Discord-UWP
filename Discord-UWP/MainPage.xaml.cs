@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -22,7 +23,7 @@ namespace Discord_UWP
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class MainPage : Page
+    public sealed partial class MainPage : Page, INotifyPropertyChanged
     {
         public ObservableCollection<string> LogMessages => Log.CurrentMessages;
 
@@ -32,6 +33,8 @@ namespace Discord_UWP
         {
             this.InitializeComponent();
         }
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
@@ -68,7 +71,12 @@ namespace Discord_UWP
             _navSplit.IsPaneOpen = !_navSplit.IsPaneOpen;
         }
 
-        private void OnSelectedNavItemChanged(object sender, SelectionChangedEventArgs e) =>
-            App.Client.GuildManager.CurrentGuild = (GuildInfo) e.AddedItems.First();
+        private void OnSelectedNavItemChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (e.AddedItems.Any())
+            {
+                App.Client.GuildManager.CurrentGuild = (GuildInfo)e.AddedItems.First();
+            }
+        }
     }
 }
