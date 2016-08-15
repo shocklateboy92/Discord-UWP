@@ -165,7 +165,7 @@ namespace Discord_UWP
             }
         }
 
-        private const string CredentialResource = "auth";
+        private const string CredentialResource = "Discord-UWP";
         private static readonly string LoginEndpoint = "https://discordapp.com/api/auth/login";
     }
 }
