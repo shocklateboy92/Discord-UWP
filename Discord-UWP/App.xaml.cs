@@ -79,11 +79,22 @@ namespace Discord_UWP
                     // When the navigation stack isn't restored navigate to the first page,
                     // configuring the new page by passing required information as a navigation
                     // parameter
-                    rootFrame.Navigate(typeof(MainPage), e.Arguments);
+                    rootFrame.Navigate(typeof(LoginPage), e.Arguments);
                 }
                 // Ensure the current window is active
                 Window.Current.Activate();
             }
+
+            AuthManager.StateChanged += async (s, c) =>
+            {
+                if (c == AuthenticationManager.AuthenticationState.Authenticated)
+                {
+                    await Client.UpdateGateway();
+                }
+            };
+
+            // Do our discord app initialization
+            Task.Run(InitializeApplication);
         }
 
         /// <summary>
@@ -114,10 +125,7 @@ namespace Discord_UWP
             deferral.Complete();
         }
 
-        public static async Task InitializeApplication()
-        {
-            await AuthManager.DoAuthentication();
-            await Client.UpdateGateway();
-        }
+        public static Task InitializeApplication() =>
+            AuthManager.TryAuthenticate();
     }
 }

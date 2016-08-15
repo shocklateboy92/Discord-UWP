@@ -34,6 +34,7 @@ namespace Discord_UWP
         public GuildManager GuildManager { get; } = new GuildManager();
 
         public event EventHandler<VoiceGraphViewModel> ChannelChanged;
+        public event EventHandler Ready;
 
         public DiscordClient()
         {
@@ -59,9 +60,11 @@ namespace Discord_UWP
                 var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "184883715053322241");  // Test channel
                 //var hotChannel = guild.Channels.FirstOrDefault(c => c.Id == "130584500072742913"); // Scrub chat
             }
+
             GuildManager.ProcessInitialState(initialState);
-            TargetChannel = GuildManager.ActiveGuilds.FirstOrDefault()?
-                .Channels.FirstOrDefault(c => c.Id == "130584500072742913");
+
+            // By this point everything should be populated
+            Ready?.Invoke(this, null);
         }
 
         internal void StopSendingVoice()
@@ -96,12 +99,12 @@ namespace Discord_UWP
         {
             _wakeLock?.RequestRelease();
 
-            await _gateway.SendMessage(new
+            await _gateway?.SendMessage(new
             {
                 op = 4,
                 d = new VoiceStateUpdate
                 {
-                    GuildId = TargetGuild.Id,
+                    GuildId = TargetGuild?.Id,
                     ChannelId = null,
                     SelfDeaf = false,
                     SelfMute = false

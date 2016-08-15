@@ -41,9 +41,6 @@ namespace Discord_UWP
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             App.Client.GuildManager.CurrentGuildChanged += UpdateUi;
-
-            // Do our discord app initialization
-            Task.Run(App.InitializeApplication);
         }
 
         private void Page_Unloaded(object sender, RoutedEventArgs e)
