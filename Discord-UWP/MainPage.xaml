@@ -91,7 +91,6 @@
                     </Grid>
                 </PivotItem>
 
-
                 <PivotItem Header="Log">
                     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
                         <Grid.RowDefinitions>
