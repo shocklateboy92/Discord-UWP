@@ -68,5 +68,13 @@ namespace Discord_UWP
                 App.Client.GuildManager.CurrentGuild = (GuildInfo)e.AddedItems.First();
             }
         }
+
+        private void OnSignOutClicked(object sender, PointerRoutedEventArgs e)
+        {
+            App.Client.LeaveChannel();
+            App.Client.CloseSockets();
+            App.AuthManager.ClearUserInfo();
+            ((Frame)Window.Current.Content).Navigate(typeof(LoginPage));
+        }
     }
 }

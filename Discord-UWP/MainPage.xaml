@@ -13,16 +13,23 @@
     <SplitView x:Name="_navSplit" DisplayMode="CompactOverlay">
 
         <SplitView.Pane>
-            <StackPanel Orientation="Vertical">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
                 <ListViewItem
-                    Margin="0"
-                    Padding="0"
-                    PointerReleased="Button_Click">
+                    Grid.Row="0"
+                    PointerReleased="Button_Click"
+                    Style="{StaticResource NavIconHost}">
                     <FontIcon Glyph="&#xE700;" Style="{StaticResource NavEllipseStyle}" />
                 </ListViewItem>
 
                 <ListView
+                    Grid.Row="1"
                     ItemsSource="{x:Bind Guilds}"
                     SelectionChanged="OnSelectedNavItemChanged"
                     SelectionMode="Single">
@@ -61,15 +68,23 @@
                         </Style>
                     </ListView.ItemContainerStyle>
                 </ListView>
-            </StackPanel>
+
+                <ListViewItem
+                    Grid.Row="3"
+                    PointerReleased="OnSignOutClicked"
+                    Style="{StaticResource NavIconHost}">
+                    <StackPanel Orientation="Horizontal">
+                        <FontIcon Glyph="&#xE748;" Style="{StaticResource NavEllipseStyle}" />
+                        <TextBlock VerticalAlignment="Center">Sign Out</TextBlock>
+                    </StackPanel>
+                </ListViewItem>
+            </Grid>
         </SplitView.Pane>
 
         <SplitView.Content>
 
             <Pivot Grid.Row="1">
-                <PivotItem 
-                    x:Name="_channelHeader"
-                    Header="Channel Info">
+                <PivotItem x:Name="_channelHeader" Header="Channel Info">
                     <local:ChannelInfoPage />
                 </PivotItem>
 

@@ -6,22 +6,29 @@
     RequestedTheme="Light">
 
     <Application.Resources>
-        <local:VisibilityConverter 
+
+        <local:VisibilityConverter
             x:Key="VisibilityConverter"
-            TrueValue="Visible"
-            Falsevalue="Collapsed" />
+            Falsevalue="Collapsed"
+            TrueValue="Visible" />
+
         <local:VisibilityConverter
             x:Key="InverseVisibilityConverter"
-            TrueValue="Collapsed"
-            Falsevalue="Visible" />
+            Falsevalue="Visible"
+            TrueValue="Collapsed" />
 
-        <Style
-            x:Key="NavEllipseStyle"
-            TargetType="FrameworkElement">
+        <Style x:Key="NavEllipseStyle" TargetType="FrameworkElement">
             <Style.Setters>
                 <Setter Property="Width" Value="40" />
                 <Setter Property="Height" Value="40" />
                 <Setter Property="Margin" Value="4,4" />
+            </Style.Setters>
+        </Style>
+
+        <Style x:Key="NavIconHost" TargetType="ListViewItem">
+            <Style.Setters>
+                <Setter Property="Margin" Value="0" />
+                <Setter Property="Padding" Value="0" />
             </Style.Setters>
         </Style>
 

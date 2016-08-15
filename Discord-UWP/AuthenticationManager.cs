@@ -33,8 +33,11 @@ namespace Discord_UWP
             }
             private set
             {
-                _currentState = value;
-                StateChanged?.Invoke(this, value);
+                if (_currentState != value)
+                {
+                    _currentState = value;
+                    StateChanged?.Invoke(this, value);
+                }
             }
         }
 
@@ -52,6 +55,8 @@ namespace Discord_UWP
                 if (credsList.Any())
                 {
                     var creds = credsList.First();
+                    creds.RetrievePassword();
+
                     await DoAuthentication(creds.UserName, creds.Password);
                     CurrentState = AuthenticationState.Authenticated;
                 }
@@ -97,6 +102,8 @@ namespace Discord_UWP
                 stringContent
             );
 
+            var vault = new PasswordVault();
+
             if (response.IsSuccessStatusCode)
             {
                 var responseObject = JsonObject.Parse(await response.Content.ReadAsStringAsync());
@@ -104,6 +111,20 @@ namespace Discord_UWP
                 Log.WriteLine("Got token: " + token);
                 SessionToken = token;
                 CurrentState = AuthenticationState.Authenticated;
+
+                // We don't want duplicates / mutliple users
+                foreach (var p in vault.RetrieveAll())
+                {
+                    vault.Remove(p);
+                }
+
+                vault.Add(
+                    new PasswordCredential(
+                        CredentialResource,
+                        userName,
+                        password
+                    )
+                );
             }
             else
             {
@@ -121,7 +142,26 @@ namespace Discord_UWP
                         response.ReasonPhrase, content
                     )
                 );
+
                 CurrentState = AuthenticationState.Failed;
+
+                // We don't want to keep around any stale creds
+                foreach (var p in vault.RetrieveAll())
+                {
+                    vault.Remove(p);
+                }
+            }
+        }
+
+        public void ClearUserInfo()
+        {
+            CurrentState = AuthenticationState.UserInteractionRequired;
+            SessionToken = null;
+
+            var vault = new PasswordVault();
+            foreach (var p in vault.RetrieveAll())
+            {
+                vault.Remove(p);
             }
         }
 

@@ -243,6 +243,12 @@ namespace Discord_UWP
             Debug.WriteLine("Closing socket...");
             _gateway?.CloseSocket();
             _voiceSocket?.CloseSocket();
+            _voiceSocket = null;
+            var newGateway = new GatewaySocket()
+            {
+                MessageHandlers = _gateway.MessageHandlers
+            };
+            _gateway = newGateway;
         }
     }
 }
