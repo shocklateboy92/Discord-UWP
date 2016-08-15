@@ -25,8 +25,6 @@ namespace Discord_UWP
     /// </summary>
     public sealed partial class MainPage : Page
     {
-        public ObservableCollection<string> LogMessages => Log.CurrentMessages;
-
         public ObservableCollection<GuildInfo> Guilds => App.Client.GuildManager.ActiveGuilds;
 
         public MainPage()
@@ -51,22 +49,6 @@ namespace Discord_UWP
         private void Page_Unloaded(object sender, RoutedEventArgs e)
         {
             App.Client.GuildManager.CurrentGuildChanged -= UpdateUi;
-        }
-
-        private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            UpdateWrapMode(e.AddedItems, TextWrapping.Wrap);
-            UpdateWrapMode(e.RemovedItems, TextWrapping.NoWrap);
-        }
-
-        private void UpdateWrapMode(IList<Object> items, TextWrapping wrapMode)
-        {
-            foreach (var item in items)
-            {
-                var container = (_logListView.ContainerFromItem(item)) as ListViewItem;
-                var textBlock = container.ContentTemplateRoot as TextBlock;
-                textBlock.TextWrapping = wrapMode;
-            }
         }
 
         private void OnJoinScrubClicked(object sender, RoutedEventArgs e) => App.Client.JoinChannel();

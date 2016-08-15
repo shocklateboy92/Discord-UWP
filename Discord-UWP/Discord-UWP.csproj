@@ -110,6 +110,9 @@
     <Compile Include="ChannelInfoViewModel.cs" />
     <Compile Include="GuildInfo.cs" />
     <Compile Include="GuildManager.cs" />
+    <Compile Include="LogViewer.xaml.cs">
+      <DependentUpon>LogViewer.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UserInfo.cs" />
     <Compile Include="VoiceGraphViewModel.cs" />
     <Compile Include="Helpers.cs" />
@@ -158,6 +161,10 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Page Include="ChannelInfoPage.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="LogViewer.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
