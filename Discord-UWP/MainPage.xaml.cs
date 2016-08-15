@@ -23,7 +23,7 @@ namespace Discord_UWP
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class MainPage : Page, INotifyPropertyChanged
+    public sealed partial class MainPage : Page
     {
         public ObservableCollection<string> LogMessages => Log.CurrentMessages;
 
@@ -32,14 +32,25 @@ namespace Discord_UWP
         public MainPage()
         {
             this.InitializeComponent();
+            UpdateUi(null, null);
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public void UpdateUi(object sender, object args)
+        {
+            _channelHeader.Header = App.Client.TargetGuild?.Name ?? "Channel Info";
+        }
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
+            App.Client.GuildManager.CurrentGuildChanged += UpdateUi;
+
             // Do our discord app initialization
             Task.Run(App.InitializeApplication);
+        }
+
+        private void Page_Unloaded(object sender, RoutedEventArgs e)
+        {
+            App.Client.GuildManager.CurrentGuildChanged -= UpdateUi;
         }
 
         private void ListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
