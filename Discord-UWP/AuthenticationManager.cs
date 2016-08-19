@@ -75,6 +75,11 @@ namespace Discord_UWP
                 Log.LogExceptionCatch(ex);
                 CurrentState = AuthenticationState.Failed;
             }
+            catch (Exception ex)
+            {
+                Log.LogExceptionCatch(ex);
+                CurrentState = AuthenticationState.Failed;
+            }
         }
 
         public async Task DoAuthentication(string userName, string password)
