@@ -88,7 +88,7 @@
                     <local:ChannelInfoPage />
                 </PivotItem>
 
-                <PivotItem Header="Voice Info">
+                <PivotItem x:Name="_voiceHeader" Header="Voice Info">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />

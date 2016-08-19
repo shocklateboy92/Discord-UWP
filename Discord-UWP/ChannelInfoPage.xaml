@@ -11,7 +11,11 @@
     Unloaded="OnUnloaded"
     mc:Ignorable="d">
 
-    <ListView ItemsSource="{x:Bind ViewModel.Channels, Mode=OneWay}" SelectionChanged="OnChannelSelectionChanged">
+    <UserControl.Resources>
+        <CollectionViewSource x:Key="ChannelsCollectionSource" x:Name="_itemSource"/>
+    </UserControl.Resources>
+
+    <ListView x:Name="_listView" ItemsSource="{Binding Source={StaticResource ChannelsCollectionSource}}" SelectionChanged="OnChannelSelectionChanged">
 
         <ListView.ItemTemplate>
             <DataTemplate x:DataType="local:ChannelInfo">

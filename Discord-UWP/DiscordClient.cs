@@ -26,14 +26,30 @@ namespace Discord_UWP
         private VoiceDataSocket _dataSocket;
         private VoiceDataManager _dataManager;
         private DisplayRequest _wakeLock;
+        ChannelInfo _targetChannel;
 
         public UserInfo Self { get; private set; }
         public GuildInfo TargetGuild => GuildManager.CurrentGuild;
-        public ChannelInfo TargetChannel { get; set; }
         public uint SelfSsrc { get; private set; }
         public GuildManager GuildManager { get; } = new GuildManager();
+        public ChannelInfo TargetChannel
+        {
+            get
+            {
+                return _targetChannel;
+            }
+            set
+            {
+                if (_targetChannel != value)
+                {
+                    _targetChannel = value;
+                    TargetChanged?.Invoke(this, null);
+                }
+            }
+        }
 
         public event EventHandler<VoiceGraphViewModel> ChannelChanged;
+        public event EventHandler TargetChanged;
         public event EventHandler Ready;
 
         public DiscordClient()

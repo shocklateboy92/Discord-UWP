@@ -36,6 +36,7 @@ namespace Discord_UWP
                         this,
                         new PropertyChangedEventArgs(nameof(ViewModel))
                     );
+                    _itemSource.Source = _viewModel.Channels.OrderBy(c => c.IsVoice);
                 }
             }
         }

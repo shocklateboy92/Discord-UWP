@@ -36,16 +36,19 @@ namespace Discord_UWP
         public void UpdateUi(object sender, object args)
         {
             _channelHeader.Header = App.Client.TargetGuild?.Name ?? "Channel Info";
+            _voiceHeader.Header = App.Client.TargetChannel?.ChannelName ?? "Voice Info";
         }
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             App.Client.GuildManager.CurrentGuildChanged += UpdateUi;
+            App.Client.TargetChanged += UpdateUi;
         }
 
         private void Page_Unloaded(object sender, RoutedEventArgs e)
         {
             App.Client.GuildManager.CurrentGuildChanged -= UpdateUi;
+            App.Client.TargetChanged -= UpdateUi;
         }
 
         private void OnJoinScrubClicked(object sender, RoutedEventArgs e) => App.Client.JoinChannel();
