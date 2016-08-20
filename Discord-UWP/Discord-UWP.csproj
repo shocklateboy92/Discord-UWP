@@ -120,6 +120,7 @@
     <Compile Include="LogViewer.xaml.cs">
       <DependentUpon>LogViewer.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Observable.cs" />
     <Compile Include="UserInfo.cs" />
     <Compile Include="VoiceGraphViewModel.cs" />
     <Compile Include="Helpers.cs" />

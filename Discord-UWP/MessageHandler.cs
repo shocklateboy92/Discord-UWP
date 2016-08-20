@@ -44,10 +44,5 @@ namespace Discord_UWP
 
             throw new InvalidOperationException("Handler of non existing type");
         }
-
-        //public static implicit operator MessageHandler<TInput>(HandlerOnlyFunction func)
-        //{
-        //    return new MessageHandler<TInput>(func);
-        //}
     }
 }

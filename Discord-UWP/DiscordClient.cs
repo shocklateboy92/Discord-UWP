@@ -59,7 +59,8 @@ namespace Discord_UWP
                 MessageHandlers = new Dictionary<string, IMessageHandler>
                 {
                     {"VOICE_STATE_UPDATE", new MessageHandler<VoiceStateUpdate>(OnVoiceStateUpdate)},
-                    {"VOICE_SERVER_UPDATE", new MessageHandler<VoiceServerUpdate>(OnVoiceServerUpdate)}
+                    {"VOICE_SERVER_UPDATE", new MessageHandler<VoiceServerUpdate>(OnVoiceServerUpdate)},
+                    {"GUILD_UPDATE", new MessageHandler<Guild>(GuildManager.ProcessGuildUpdate) }
                 }
             };
             _gateway.InitialStateReceived += OnInitialStateReceived;

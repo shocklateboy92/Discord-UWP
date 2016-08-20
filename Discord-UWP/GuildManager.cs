@@ -61,5 +61,16 @@ namespace Discord_UWP
                 channel.ProcessVoiceStateUpdate(voiceState);
             }
         }
+
+        public void ProcessGuildUpdate(Guild update)
+        {
+            Log.WriteLine($"Recieved update for guild '{update.Name}'");
+            ActiveGuilds.First(g => g.Id == update.Id).ProcessUpdate(update);
+
+            if (update.Id == CurrentGuild.Id)
+            {
+                CurrentGuildChanged?.Invoke(this, CurrentGuild);
+            }
+        }
     }
 }

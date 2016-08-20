@@ -49,7 +49,7 @@
                                     <TextBlock
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center"
-                                        Text="{x:Bind TitleText}" />
+                                        Text="{x:Bind TitleText, Mode=OneWay}" />
                                 </Grid>
 
                                 <TextBlock
